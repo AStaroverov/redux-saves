@@ -17,7 +17,7 @@ import {
   setHistoriesIndex,
   setNextHistoriesIndex,
   decreaseHistoryFromHead,
-} from "./common";
+} from "./helpers";
 import { createSetSaveMetadataAction } from "./reducer";
 
 const requestIdleCallback =

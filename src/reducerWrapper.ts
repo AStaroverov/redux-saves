@@ -10,7 +10,7 @@ import {
   clearHistory,
   getHistoriesIndex,
   getNextHistoriesIndex,
-} from "./common";
+} from "./helpers";
 
 // undoRedoReducerWrapper create for each reducer history and controls the content
 export function savesReducerWrapper<S>(

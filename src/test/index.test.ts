@@ -3,7 +3,7 @@ import {Action, applyMiddleware } from "redux";
 import {savesReducer, TSavesState} from "../reducer";
 import { savesReducerWrapper } from "../reducerWrapper";
 import { createSavesMiddleware } from "../middleware";
-import { getHistories } from "../common";
+import { getHistories } from "../helpers";
 import {
   createAddSaveAction,
   createClearSavesAction,
