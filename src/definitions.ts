@@ -1,41 +1,39 @@
 import { Action } from "redux";
 
-export type TBaseHistoryAction<T = ActionType, P = void> = Action<T> & {
+export type TBaseSaveAction<T = ActionType, P = void> = Action<T> & {
   payload: P;
 }
 
-export type THistoryActions =
-  | THistoryUpdateReducersAction
-  | THistoryAddPointAction
-  | THistoryRemovePointAction
-  | THistoryClearAction
-  | THistoryGoBackAction
-  | THistoryGoForwardAction
-  | THistoryGoBackDoneAction
-  | THistoryGoForwardDoneAction
-  | THistorySkipAction
+export type TSaveActions =
+  | TSaveUpdateReducersAction
+  | TAddSaveAction
+  | TRemoveLastSavesAction
+  | TClearSavesAction
+  | TLoadPrevSaveAction
+  | TLoadNextSaveAction
+  | TLoadPrevSaveDoneAction
+  | TLoadNextSaveDoneAction
+  | TSaveSkipAction
 
 export enum ActionType {
-  HistoryUpdateReducers = '@@HISTORY@@/HistoryUpdateReducers',
-
-  HistoryClear = '@@HISTORY@@/HistoryClear',
-  HistoryAddPoint = '@@HISTORY@@/HistoryAddPoint',
-  HistoryRemovePoint = '@@HISTORY@@/HistoryRemovePoint',
-  HistoryGoBack = '@@HISTORY@@/HistoryGoBack',
-  HistoryGoForward = '@@HISTORY@@/HistoryGoForward',
-
-  HistoryGoBackDone = '@@HISTORY@@/HistoryGoBackDone',
-  HistoryGoForwardDone = '@@HISTORY@@/HistoryGoForwardDone',
-  HistorySkip = '@@HISTORY@@/HistorySkip',
+  SaveSkip = '@@REDUX_SAVE@@/SaveSkip',
+  SavesUpdateReducers = '@@REDUX_SAVE@@/SavesUpdateReducers',
+  ClearSaves = '@@REDUX_SAVE@@/ClearSaves',
+  AddSave = '@@REDUX_SAVE@@/AddSave',
+  RemoveLastSaves = '@@REDUX_SAVE@@/RemoveLastsSaves',
+  LoadPrevSave = '@@REDUX_SAVE@@/LoadPrevSave',
+  LoadNextSave = '@@REDUX_SAVE@@/LoadNextSave',
+  LoadPrevSaveDone = '@@REDUX_SAVE@@/LoadPrevSaveDone',
+  LoadNextSaveDone = '@@REDUX_SAVE@@/LoadNextSaveDone',
 }
 
-export const isValuableHistoryAction = (actionType: string) => {
+export const isValuableAction = (actionType: string) => {
   switch (actionType) {
-    case ActionType.HistoryClear:
-    case ActionType.HistoryAddPoint:
-    case ActionType.HistoryRemovePoint:
-    case ActionType.HistoryGoBack:
-    case ActionType.HistoryGoForward: {
+    case ActionType.ClearSaves:
+    case ActionType.AddSave:
+    case ActionType.RemoveLastSaves:
+    case ActionType.LoadPrevSave:
+    case ActionType.LoadNextSave: {
       return true;
     }
     default:
@@ -43,76 +41,76 @@ export const isValuableHistoryAction = (actionType: string) => {
   }
 };
 
-export type THistoryUpdateReducersAction = TBaseHistoryAction<ActionType.HistoryUpdateReducers>;
-export function createHistoryUpdateReducersAction(): THistoryUpdateReducersAction {
+export type TSaveUpdateReducersAction = TBaseSaveAction<ActionType.SavesUpdateReducers>;
+export function createSaveUpdateReducersAction(): TSaveUpdateReducersAction {
   return {
-    type: ActionType.HistoryUpdateReducers,
+    type: ActionType.SavesUpdateReducers,
     payload: undefined,
   }
 }
 
-export type THistoryAddPointAction = TBaseHistoryAction<ActionType.HistoryAddPoint>;
-export function createHistoryAddPointAction(): THistoryAddPointAction {
+export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave>;
+export function createAddSaveAction(): TAddSaveAction {
   return {
-    type: ActionType.HistoryAddPoint,
+    type: ActionType.AddSave,
     payload: undefined,
   }
 }
 
-export type THistoryRemovePointAction = TBaseHistoryAction<ActionType.HistoryRemovePoint, number | void>;
-export function createHistoryRemovePointAction(count?: number): THistoryRemovePointAction {
+export type TRemoveLastSavesAction = TBaseSaveAction<ActionType.RemoveLastSaves, number | void>;
+export function createRemoveLastSavesAction(count?: number): TRemoveLastSavesAction {
   return {
-    type: ActionType.HistoryRemovePoint,
+    type: ActionType.RemoveLastSaves,
     payload: count
   }
 }
 
-export type THistoryClearAction = TBaseHistoryAction<ActionType.HistoryClear>;
-export function createHistoryClearAction(): THistoryClearAction {
+export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves>;
+export function createClearSavesAction(): TClearSavesAction {
   return {
-    type: ActionType.HistoryClear,
+    type: ActionType.ClearSaves,
     payload: undefined
   }
 }
 
-export type THistoryGoBackAction = TBaseHistoryAction<ActionType.HistoryGoBack, number | void>;
-export function createHistoryGoBackAction(count?: number): THistoryGoBackAction {
+export type TLoadPrevSaveAction = TBaseSaveAction<ActionType.LoadPrevSave, number | void>;
+export function createLoadPrevSaveAction(count?: number): TLoadPrevSaveAction {
   return {
-    type: ActionType.HistoryGoBack,
+    type: ActionType.LoadPrevSave,
     payload: count
   }
 }
 
-export type THistoryGoForwardAction = TBaseHistoryAction<ActionType.HistoryGoForward, number | void>;
-export function createHistoryGoForwardAction(count?: number): THistoryGoForwardAction {
+export type TLoadNextSaveAction = TBaseSaveAction<ActionType.LoadNextSave, number | void>;
+export function createLoadNextSaveAction(count?: number): TLoadNextSaveAction {
   return {
-    type: ActionType.HistoryGoForward,
+    type: ActionType.LoadNextSave,
     payload: count
   }
 }
 
 // Just for trigger business logic
-export type THistoryGoBackDoneAction = TBaseHistoryAction<ActionType.HistoryGoBackDone>;
-export function createHistoryGoBackDoneAction(): THistoryGoBackDoneAction {
+export type TLoadPrevSaveDoneAction = TBaseSaveAction<ActionType.LoadPrevSaveDone>;
+export function createLoadPrevSaveDoneAction(): TLoadPrevSaveDoneAction {
   return {
-    type: ActionType.HistoryGoBackDone,
+    type: ActionType.LoadPrevSaveDone,
     payload: undefined
   }
 }
 
-export type THistoryGoForwardDoneAction = TBaseHistoryAction<ActionType.HistoryGoForwardDone>;
-export function createHistoryGoForwardDoneAction(): THistoryGoForwardDoneAction {
+export type TLoadNextSaveDoneAction = TBaseSaveAction<ActionType.LoadNextSaveDone>;
+export function createLoadNextSaveDoneAction(): TLoadNextSaveDoneAction {
   return {
-    type: ActionType.HistoryGoForwardDone,
+    type: ActionType.LoadNextSaveDone,
     payload: undefined
   }
 }
 
 // Action for skip some valuable action
-export type THistorySkipAction = TBaseHistoryAction<ActionType.HistorySkip>;
-export function createHistorySkipAction(): THistorySkipAction {
+export type TSaveSkipAction = TBaseSaveAction<ActionType.SaveSkip>;
+export function createSaveSkipAction(): TSaveSkipAction {
   return {
-    type: ActionType.HistorySkip,
+    type: ActionType.SaveSkip,
     payload: undefined
   }
 }

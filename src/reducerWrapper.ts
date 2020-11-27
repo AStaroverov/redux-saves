@@ -1,6 +1,6 @@
 import { Reducer, AnyAction } from "redux";
 import {
-  isValuableHistoryAction, ActionType, THistoryActions,
+  isValuableAction, ActionType, TSaveActions,
 } from "./definitions";
 import {
   addHistory,
@@ -13,20 +13,20 @@ import {
 } from "./common";
 
 // undoRedoReducerWrapper create for each reducer history and controls the content
-export function historyReducerWrapper<S>(
-  reducer: Reducer<S, AnyAction | THistoryActions>
-): Reducer<S, AnyAction | THistoryActions> {
+export function savesReducerWrapper<S>(
+  reducer: Reducer<S, AnyAction | TSaveActions>
+): Reducer<S, AnyAction | TSaveActions> {
   const history: THistory = createHistory();
 
-  return (reducerState: S | undefined, action: AnyAction | THistoryActions): S => {
+  return (reducerState: S | undefined, action: AnyAction | TSaveActions): S => {
     // HistoryUpdateReducers for sync redux-history states and reducers
-    if (action.type === ActionType.HistoryUpdateReducers) {
+    if (action.type === ActionType.SavesUpdateReducers) {
       return (history[history.length - Math.min(getHistoriesIndex(), history.length)] ||
         reducerState) as S;
     }
 
     // use default logic for none history actions
-    if (reducerState === undefined || !isValuableHistoryAction(action.type)) {
+    if (reducerState === undefined || !isValuableAction(action.type)) {
       return reducer(reducerState, action);
     }
 
@@ -35,7 +35,7 @@ export function historyReducerWrapper<S>(
 
     const nextHistoriesIndex = getNextHistoriesIndex();
 
-    if (action.type === ActionType.HistoryGoBack) {
+    if (action.type === ActionType.LoadPrevSave) {
       if (history.length === 0) {
         return reducerState;
       }
@@ -50,7 +50,7 @@ export function historyReducerWrapper<S>(
       return nextState;
     }
 
-    if (action.type === ActionType.HistoryGoForward) {
+    if (action.type === ActionType.LoadNextSave) {
       if (history.length === 0) {
         return reducerState;
       }
@@ -58,11 +58,11 @@ export function historyReducerWrapper<S>(
       return history[history.length - Math.min(nextHistoriesIndex, history.length)] as S;
     }
 
-    if (action.type === ActionType.HistoryAddPoint) {
+    if (action.type === ActionType.AddSave) {
       pushToHistory(history, reducerState);
     }
 
-    if (action.type === ActionType.HistoryClear) {
+    if (action.type === ActionType.ClearSaves) {
       clearHistory(history);
     }
 

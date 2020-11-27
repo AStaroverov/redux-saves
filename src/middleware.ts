@@ -1,12 +1,12 @@
 import { Middleware } from "redux";
 import {
-  isValuableHistoryAction,
+  isValuableAction,
   ActionType,
-  createHistorySkipAction,
-  createHistoryUpdateReducersAction,
-  createHistoryGoBackDoneAction,
-  createHistoryGoForwardDoneAction,
-  THistoryActions
+  createSaveSkipAction,
+  createSaveUpdateReducersAction,
+  createLoadPrevSaveDoneAction,
+  createLoadNextSaveDoneAction,
+  TSaveActions
 } from "./definitions";
 import {
   removeHistories,
@@ -18,7 +18,7 @@ import {
   setNextHistoriesIndex,
   decreaseHistoryFromHead,
 } from "./common";
-import { createSetHistoryMetadataAction } from "./reducer";
+import { createSetSaveMetadataAction } from "./reducer";
 
 const requestIdleCallback =
   // @ts-ignore
@@ -27,10 +27,10 @@ const requestIdleCallback =
 
 // Middleware needs for control duplicate points in history and detect significant change,
 
-export function createHistoryMiddleware(options?: { limit: number }): Middleware {
+export function createSavesMiddleware(options?: { limit: number }): Middleware {
   const limit = options?.limit || 50;
   const histories = getHistories();
-  let maxLengthHistories = 0;
+  let maxCountSaves = 0;
 
   let scheduled = false;
   // simple scheduler for decrease histories, if they longer than limit
@@ -48,69 +48,69 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
   };
 
   return function historyMiddleware(store) {
-    return (next) => (action: THistoryActions) => {
+    return (next) => (action: TSaveActions) => {
       // if action isn't valuable for history we can return default behavior
-      if (!isValuableHistoryAction(action.type)) {
+      if (!isValuableAction(action.type)) {
         return next(action);
       }
 
-      const historiesIndex = getHistoriesIndex();
-      const prevMaxLengthHistories = maxLengthHistories;
+      const saveIndex = getHistoriesIndex();
+      const prevMaxCountSaves = maxCountSaves;
 
       if (histories.length > 0) {
-        let nextHistoriesIndex = historiesIndex;
+        let nextHistoriesIndex = saveIndex;
 
-        if (action.type === ActionType.HistoryClear) {
+        if (action.type === ActionType.ClearSaves) {
           setNextHistoriesIndex(0);
-          maxLengthHistories = 0;
+          maxCountSaves = 0;
         }
 
-        if (action.type === ActionType.HistoryAddPoint) {
+        if (action.type === ActionType.AddSave) {
           // If we is in process historical travel, remove all points after current point
-          if (historiesIndex > 0) {
-            decreaseHistories(historiesIndex);
+          if (saveIndex > 0) {
+            decreaseHistories(saveIndex);
           }
 
           nextHistoriesIndex = 0;
         }
 
         if (
-          action.type === ActionType.HistoryRemovePoint &&
+          action.type === ActionType.RemoveLastSaves &&
           // We can remove points only not in travel time
-          historiesIndex === 0 &&
+          saveIndex === 0 &&
           // and only if we have some history points
-          maxLengthHistories > 0
+          maxCountSaves > 0
         ) {
           const count = Math.min(
             action.payload || 1,
-            maxLengthHistories
+            maxCountSaves
           );
 
           decreaseHistories(count);
-          maxLengthHistories = Math.max(maxLengthHistories - count, 0);
+          maxCountSaves = Math.max(maxCountSaves - count, 0);
         }
 
-        if (action.type === ActionType.HistoryGoBack && maxLengthHistories > 0) {
+        if (action.type === ActionType.LoadPrevSave && maxCountSaves > 0) {
           nextHistoriesIndex = Math.min(
-            maxLengthHistories,
-            historiesIndex + (action.payload || 1)
+            maxCountSaves,
+            saveIndex + (action.payload || 1)
           );
         }
 
-        if (action.type === ActionType.HistoryGoForward && maxLengthHistories > 0) {
-          nextHistoriesIndex = Math.max(1, historiesIndex - 1);
+        if (action.type === ActionType.LoadNextSave && maxCountSaves > 0) {
+          nextHistoriesIndex = Math.max(1, saveIndex - 1);
         }
 
         if (
-          (action.type === ActionType.HistoryGoBack || action.type === ActionType.HistoryGoForward) &&
-          nextHistoriesIndex === historiesIndex
+          (action.type === ActionType.LoadPrevSave || action.type === ActionType.LoadNextSave) &&
+          nextHistoriesIndex === saveIndex
         ) {
           // If after HistoryGoBack\HistoryGoForward
-          // nothing changed (nextHistoriesIndex === historiesIndex)
+          // nothing changed (nextHistoriesIndex === saveIndex)
           // we should skip call reducers, because reducers can have some changes
           // and we shouldn't rewrite this one
           // It's situations typical for reducers that we don't save on changes.
-          return next(createHistorySkipAction());
+          return next(createSaveSkipAction());
         } else {
           setNextHistoriesIndex(nextHistoriesIndex);
           // remove all histories for so as not to store dead reducers
@@ -122,12 +122,12 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
       const result = next(action);
 
       if (histories.length > 0) {
-        let nextHistoriesIndex = getNextHistoriesIndex();
+        let nextSaveIndex = getNextHistoriesIndex();
         let shouldUpdateReducers = false;
 
         if (
-          action.type === ActionType.HistoryAddPoint ||
-          (action.type === ActionType.HistoryGoBack && historiesIndex === 0)
+          action.type === ActionType.AddSave ||
+          (action.type === ActionType.LoadPrevSave && saveIndex === 0)
         ) {
           // Example - HistoryAddPoint()
           //                                         ↓ - histories index == 0
@@ -161,7 +161,7 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
           // 4.1) if it's true, it's mean that created new Histories points
           // exactly same as last Histories points
           // Then we should remove last duplicate point and update reducers,
-          // because now nextHistoriesIndex not coincides with reducers states
+          // because now nextSaveIndex not coincides with reducers states
           // after this action it will be look as
           //          ↓ - history point
           // [0] [1] [2] [3]
@@ -171,14 +171,14 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
           // [0] [1] [2] [3] [4]
 
           let duplicatedPoints = 0;
-          maxLengthHistories = 0;
+          maxCountSaves = 0;
 
           histories.forEach((history) => {
-            maxLengthHistories = Math.max(maxLengthHistories, history.length);
+            maxCountSaves = Math.max(maxCountSaves, history.length);
 
             // start decrease histories by limit with delay
-            if (maxLengthHistories > limit) {
-              maxLengthHistories = limit;
+            if (maxCountSaves > limit) {
+              maxCountSaves = limit;
               scheduleDecreaseHistoriesByLimit();
             }
 
@@ -193,15 +193,15 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
           if (allHistoriesHaveDuplicatePoints) {
             // If all reducers adds only state duplicates we can drop it
             decreaseHistories(1);
-            maxLengthHistories -= 1;
+            maxCountSaves -= 1;
           }
 
-          if (action.type === ActionType.HistoryGoBack) {
+          if (action.type === ActionType.LoadPrevSave) {
             // when we do "go back" we add history point and our index should shift at one
-            nextHistoriesIndex += 1;
+            nextSaveIndex += 1;
 
             // if added point exactly same as prev history point it mean that we should update
-            // our reducers, because now nextHistoriesIndex not coincides with reducers states
+            // our reducers, because now nextSaveIndex not coincides with reducers states
             if (allHistoriesHaveDuplicatePoints) {
               shouldUpdateReducers = true;
             }
@@ -209,32 +209,32 @@ export function createHistoryMiddleware(options?: { limit: number }): Middleware
         }
 
         // update indexes
-        setHistoriesIndex(nextHistoriesIndex);
-        setNextHistoriesIndex(nextHistoriesIndex);
+        setHistoriesIndex(nextSaveIndex);
+        setNextHistoriesIndex(nextSaveIndex);
 
         // update reducers if after execution reducers
-        // nextHistoriesIndex increased and maxHistoryLength decreased
+        // nextSaveIndex increased and maxHistoryLength decreased
         if (shouldUpdateReducers) {
-          store.dispatch(createHistoryUpdateReducersAction());
+          store.dispatch(createSaveUpdateReducersAction());
         }
 
         // update public metadata for application
         store.dispatch(
-          createSetHistoryMetadataAction({
-            historyLength: maxLengthHistories,
-            historyIndex: nextHistoriesIndex,
+          createSetSaveMetadataAction({
+            countSaves: maxCountSaves,
+            currentSaveIndex: nextSaveIndex,
           })
         );
 
         // trigger HistoryWentBack/HistoryWentForward
         // if HistoryGoBack/HistoryGoForward were successful
-        if (prevMaxLengthHistories !== maxLengthHistories || historiesIndex !== nextHistoriesIndex) {
-          if (action.type === ActionType.HistoryGoBack) {
-            store.dispatch(createHistoryGoBackDoneAction());
+        if (prevMaxCountSaves !== maxCountSaves || saveIndex !== nextSaveIndex) {
+          if (action.type === ActionType.LoadPrevSave) {
+            store.dispatch(createLoadPrevSaveDoneAction());
           }
 
-          if (action.type === ActionType.HistoryGoForward) {
-            store.dispatch(createHistoryGoForwardDoneAction());
+          if (action.type === ActionType.LoadNextSave) {
+            store.dispatch(createLoadNextSaveDoneAction());
           }
         }
       }

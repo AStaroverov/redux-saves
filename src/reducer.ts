@@ -1,37 +1,37 @@
 import { Action } from 'redux';
 
-export const setHistoryMetadataActionType: '@@HISTORY@@/SetHistoryMetadataActionType'
-  = '@@HISTORY@@/SetHistoryMetadataActionType';
+export const setSavesMetadataActionType: '@@REDUX_SAVES@@/setSavesMetadataActionType'
+  = '@@REDUX_SAVES@@/setSavesMetadataActionType';
 
-export type THistoryState = {
-  historyLength: number;
-  historyIndex: number;
+export type TSavesState = {
+  countSaves: number;
+  currentSaveIndex: number;
 };
 
-export function getInitialState(): THistoryState {
+export function getInitialState(): TSavesState {
   return {
-    historyLength: 0,
-    historyIndex: 0,
+    countSaves: 0,
+    currentSaveIndex: 0,
   };
 }
 
-export type TSetHistoryMetadataAction = Action<typeof setHistoryMetadataActionType> & { payload: THistoryState };
-export function createSetHistoryMetadataAction(payload: THistoryState): TSetHistoryMetadataAction {
+export type TSetSavesMetadataAction = Action<typeof setSavesMetadataActionType> & { payload: TSavesState };
+export function createSetSaveMetadataAction(payload: TSavesState): TSetSavesMetadataAction {
   return {
-    type: setHistoryMetadataActionType,
+    type: setSavesMetadataActionType,
     payload
   };
 }
 
-export function historyReducer(
-  state: THistoryState = getInitialState(),
-  action: Action | TSetHistoryMetadataAction
-): THistoryState {
+export function savesReducer(
+  state: TSavesState = getInitialState(),
+  action: Action | TSetSavesMetadataAction
+): TSavesState {
   switch (action.type) {
-    case setHistoryMetadataActionType: {
+    case setSavesMetadataActionType: {
       return {
         ...state,
-        ...(action as TSetHistoryMetadataAction).payload,
+        ...(action as TSetSavesMetadataAction).payload,
       }
     }
 

@@ -1,14 +1,14 @@
 import { createStore } from "redux-dynamic-modules-core";
 import {Action, applyMiddleware } from "redux";
-import {historyReducer, THistoryState} from "../reducer";
-import { historyReducerWrapper } from "../reducerWrapper";
-import { createHistoryMiddleware } from "../middleware";
+import {savesReducer, TSavesState} from "../reducer";
+import { savesReducerWrapper } from "../reducerWrapper";
+import { createSavesMiddleware } from "../middleware";
 import { getHistories } from "../common";
 import {
-  createHistoryAddPointAction,
-  createHistoryClearAction,
-  createHistoryGoBackAction, createHistoryGoForwardAction,
-  createHistoryRemovePointAction
+  createAddSaveAction,
+  createClearSavesAction,
+  createLoadPrevSaveAction, createLoadNextSaveAction,
+  createRemoveLastSavesAction
 } from "../definitions";
 
 const R1 = "reducer1";
@@ -16,18 +16,18 @@ const R2 = "reducer2";
 const R3 = "reducer3";
 
 type TState = {
-  historyReducer: THistoryState,
+  savesReducer: TSavesState,
   [R1]?: number,
   [R2]?: number[],
   [R3]?: { n: number },
 }
 
 const getHistoryLength = (state: TState) => {
-  return (state.historyReducer as THistoryState).historyLength;
+  return state.savesReducer.countSaves;
 }
 
 const getHistoryIndex = (state: TState) => {
-  return (state.historyReducer as THistoryState).historyIndex;
+  return state.savesReducer.currentSaveIndex;
 }
 
 enum ActionType {
@@ -48,13 +48,13 @@ describe("redux-saves", () => {
 
   const LIMIT = 10;
   const store = createStore<TState>({
-    enhancers: [applyMiddleware(createHistoryMiddleware({ limit: LIMIT }))]
+    enhancers: [applyMiddleware(createSavesMiddleware({ limit: LIMIT }))]
   });
 
   store.addModule({
-    id: 'historyReducer',
+    id: 'savesReducer',
     reducerMap: {
-      historyReducer
+      savesReducer
     }
   });
 
@@ -90,7 +90,7 @@ describe("redux-saves", () => {
     unregisterReducer1 = store.addModule({
       id: R1,
       reducerMap: {
-        [R1]: historyReducerWrapper((state = 0, action) => {
+        [R1]: savesReducerWrapper((state = 0, action) => {
           if (action.type === ActionType.Increase) {
             return state + action.payload;
           }
@@ -106,7 +106,7 @@ describe("redux-saves", () => {
     unregisterReducer2 = store.addModule({
       id: R2,
       reducerMap: {
-        [R2]: historyReducerWrapper((state = [], action) => {
+        [R2]: savesReducerWrapper((state = [], action) => {
           if (action.type === ActionType.Collect) {
             return state.concat(action.payload);
           }
@@ -122,7 +122,7 @@ describe("redux-saves", () => {
     unregisterReducer3 = store.addModule({
       id: R3,
       reducerMap: {
-        [R3]: historyReducerWrapper((state: { n: number } = {n: 0}, action) => {
+        [R3]: savesReducerWrapper((state: { n: number } = {n: 0}, action) => {
           if (action.type === ActionType.Change) {
             return {n: action.payload};
           }
@@ -140,7 +140,7 @@ describe("redux-saves", () => {
     registerReducer2();
     registerReducer3();
     dispatch(createResetAction());
-    dispatch(createHistoryClearAction());
+    dispatch(createClearSavesAction());
   });
 
   afterEach(() => {
@@ -149,107 +149,108 @@ describe("redux-saves", () => {
     unregisterReducer3();
   });
 
-  test("should add history points", () => {
-    dispatch(createHistoryAddPointAction());
+  test("should add saves", () => {
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
     expect(select(getHistoryLength)).toBe(1);
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createCollectAction(1));
 
     expect(select(getHistoryLength)).toBe(2);
   });
 
   test("should go back if state changed", () => {
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
     expect(select(getHistoryLength)).toBe(1);
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
 
     expect(select(getHistoryLength)).toBe(2);
   });
 
-  test("should correct go back on few points if state changed", () => {
+  test("should correct load on few saves if state changed", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(0);
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryGoBackAction(3));
+    dispatch(createLoadPrevSaveAction(3));
 
     expect(select((state: TState) => state[R1])).toBe(2);
     expect(select(getHistoryLength)).toBe(5);
     expect(select(getHistoryIndex)).toBe(4);
   });
 
-  test("should correct go back at few points if state don't changed", () => {
+  test("should correct load at few saves if state don't changed", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(0);
 
-    dispatch(createHistoryGoBackAction(3));
+    dispatch(createLoadPrevSaveAction(3));
 
     expect(select((state: TState) => state[R1])).toBe(1);
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(4);
   });
-  test("should correct go back at few points with dynamic added reducers", () => {
+
+  test("should correct load at few saves with dynamic added reducers", () => {
     unregisterReducer2();
     unregisterReducer3();
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     registerReducer2();
 
     dispatch(createCollectAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createCollectAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     registerReducer3();
 
     dispatch(createChangeAction(3));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createChangeAction(4));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     expect(select(getHistoryLength)).toBe(6);
     expect(select(getHistoryIndex)).toBe(0);
 
     let state: TState;
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(6);
     expect(select(getHistoryIndex)).toBe(2);
@@ -257,7 +258,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([1, 1]);
     expect(state[R3]).toEqual({ n: 3 });
 
-    dispatch(createHistoryGoBackAction(2));
+    dispatch(createLoadPrevSaveAction(2));
     state = store.getState();
     expect(select(getHistoryLength)).toBe(6);
     expect(select(getHistoryIndex)).toBe(4);
@@ -265,7 +266,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([1]);
     expect(state[R3]).toEqual({ n: 3 });
 
-    dispatch(createHistoryGoBackAction(2));
+    dispatch(createLoadPrevSaveAction(2));
     state = store.getState();
     expect(select(getHistoryLength)).toBe(6);
     expect(select(getHistoryIndex)).toBe(6);
@@ -274,19 +275,19 @@ describe("redux-saves", () => {
     expect(state[R3]).toEqual({ n: 3 });
   });
 
-  test("shouldn't add duplicate history point", () => {
+  test("shouldn't add duplicate saves", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
-    dispatch(createHistoryAddPointAction());
-    dispatch(createHistoryGoBackAction());
+    dispatch(createAddSaveAction());
+    dispatch(createAddSaveAction());
+    dispatch(createLoadPrevSaveAction());
 
     expect(select(getHistoryLength)).toBe(1);
   });
 
-  test("should remove history point", () => {
+  test("should remove save", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
-    dispatch(createHistoryRemovePointAction());
+    dispatch(createAddSaveAction());
+    dispatch(createRemoveLastSavesAction());
 
     getHistories().forEach((history) => {
       expect(history.length).toBe(0);
@@ -295,25 +296,25 @@ describe("redux-saves", () => {
     expect(select(getHistoryLength)).toBe(0);
   });
 
-  test("should remove few history points", () => {
-    dispatch(createHistoryAddPointAction());
+  test("should remove few saves", () => {
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
     expect(select(getHistoryLength)).toBe(5);
 
-    dispatch(createHistoryRemovePointAction(3));
+    dispatch(createRemoveLastSavesAction(3));
 
     getHistories().forEach((history) => {
       expect(history.length).toBe(2);
@@ -322,16 +323,16 @@ describe("redux-saves", () => {
     expect(select(getHistoryLength)).toBe(2);
   });
 
-  test("try remove more points than exist", () => {
+  test("try remove more saves than exist", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     expect(select(getHistoryLength)).toBe(2);
 
-    dispatch(createHistoryRemovePointAction(5));
+    dispatch(createRemoveLastSavesAction(5));
 
     getHistories().forEach((history) => {
       expect(history.length).toBe(0);
@@ -340,11 +341,11 @@ describe("redux-saves", () => {
     expect(select(getHistoryLength)).toBe(0);
   });
 
-  test("shouldn't remove history point after change history index", () => {
+  test("shouldn't remove save after change history index", () => {
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
-    dispatch(createHistoryGoBackAction());
-    dispatch(createHistoryRemovePointAction());
+    dispatch(createAddSaveAction());
+    dispatch(createLoadPrevSaveAction());
+    dispatch(createRemoveLastSavesAction());
 
     expect(select(getHistoryLength)).toBe(1);
   });
@@ -352,16 +353,16 @@ describe("redux-saves", () => {
   test("should correct walk on history", () => {
     let state: TState;
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createCollectAction(2));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     dispatch(createChangeAction(3));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
@@ -370,7 +371,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([2]);
     expect(state[R3]).toEqual({ n: 3 });
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(2);
@@ -378,7 +379,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([2]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(3);
@@ -386,7 +387,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(4);
@@ -394,7 +395,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoForwardAction());
+    dispatch(createLoadNextSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(3);
@@ -402,7 +403,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoForwardAction());
+    dispatch(createLoadNextSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(2);
@@ -410,7 +411,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([2]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoForwardAction());
+    dispatch(createLoadNextSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(1);
@@ -418,7 +419,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([2]);
     expect(state[R3]).toEqual({ n: 3 });
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(2);
@@ -426,7 +427,7 @@ describe("redux-saves", () => {
     expect(state[R2]).toEqual([2]);
     expect(state[R3]).toEqual({ n: 0 });
 
-    dispatch(createHistoryGoBackAction());
+    dispatch(createLoadPrevSaveAction());
     state = store.getState();
     expect(select(getHistoryLength)).toBe(4);
     expect(select(getHistoryIndex)).toBe(3);
@@ -435,7 +436,7 @@ describe("redux-saves", () => {
     expect(state[R3]).toEqual({ n: 0 });
 
     dispatch(createIncreaseAction(1));
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     state = store.getState();
     expect(select(getHistoryLength)).toBe(2);
@@ -449,16 +450,16 @@ describe("redux-saves", () => {
     unregisterReducer2();
     unregisterReducer3();
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
     dispatch(createIncreaseAction(1));
 
     expect(select(getHistoryLength)).toBe(4);
@@ -467,13 +468,13 @@ describe("redux-saves", () => {
     unregisterReducer1();
     registerReducer2();
 
-    dispatch(createHistoryAddPointAction());
+    dispatch(createAddSaveAction());
 
     expect(select(getHistoryLength)).toBe(1);
     expect(select(getHistoryIndex)).toBe(0);
   });
 
-  test("should delete asynchronously points after the limit is exceeded", (done) => {
+  test("should delete asynchronously saves after the limit is exceeded", (done) => {
     unregisterReducer2();
     unregisterReducer3();
 
@@ -482,7 +483,7 @@ describe("redux-saves", () => {
     while (i > 0) {
       i -= 1;
 
-      dispatch(createHistoryAddPointAction());
+      dispatch(createAddSaveAction());
       dispatch(createIncreaseAction(1));
 
       if (i === 15) registerReducer2();
