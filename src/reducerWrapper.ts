@@ -1,6 +1,6 @@
 import { Reducer, AnyAction } from "redux";
 import {
-  isValuableAction, ActionType, TSaveActions,
+  isValuableAction, ActionType, TSaveActions, TGroupKey, DEFAULT_GROUP_KEY, isValuableReducerAction,
 } from "./definitions";
 import {
   addHistory,
@@ -8,42 +8,61 @@ import {
   pushToHistory,
   createHistory,
   clearHistory,
-  getHistoriesIndex,
-  getNextHistoriesIndex,
+  getHistoryIndex,
+  getNextHistoryIndex,
 } from "./helpers";
 
-// undoRedoReducerWrapper create for each reducer history and controls the content
-export function savesReducerWrapper<S>(
-  reducer: Reducer<S, AnyAction | TSaveActions>
+
+// savesReducerWrapper create for each reducer history and controls the content
+function savesReducerWrapper<S>(
+  groupKeyOrReducer: (string | symbol | number) | Reducer<S, AnyAction | TSaveActions>,
+  optionalReducer?: Reducer<S, AnyAction | TSaveActions>
 ): Reducer<S, AnyAction | TSaveActions> {
+  const groupKey: TGroupKey = optionalReducer
+    ? (groupKeyOrReducer as TGroupKey)
+    : DEFAULT_GROUP_KEY;
+  const reducer: Reducer<S, AnyAction | TSaveActions> = optionalReducer
+    ? optionalReducer
+    : groupKeyOrReducer as Reducer<S, AnyAction | TSaveActions>;
+
   const history: THistory = createHistory();
 
   return (reducerState: S | undefined, action: AnyAction | TSaveActions): S => {
-    // HistoryUpdateReducers for sync redux-history states and reducers
-    if (action.type === ActionType.SavesUpdateReducers) {
-      return (history[history.length - Math.min(getHistoriesIndex(), history.length)] ||
-        reducerState) as S;
+    // skip on init state
+    if (reducerState === undefined) {
+      return reducer(reducerState, action);
     }
 
-    // use default logic for none history actions
-    if (reducerState === undefined || !isValuableAction(action.type)) {
+    // use default logic for none redux-saves actions
+    if (!isValuableReducerAction(action.type)) {
       return reducer(reducerState, action);
     }
 
     // add history each history action, it give understanding that this reducer still alive
-    addHistory(history);
+    addHistory(groupKey, history);
 
-    const nextHistoriesIndex = getNextHistoriesIndex();
+    // if action not for this group
+    if (action.payload.groupKeys !== undefined && action.payload.groupKeys.indexOf(groupKey) === -1) {
+      return reducer(reducerState, action);
+    }
+
+    // SavesUpdateReducers for sync redux-history states and reducers
+    if (action.type === ActionType.SavesUpdateReducers) {
+      return (history[history.length - Math.min(getHistoryIndex(groupKey), history.length)] ||
+        reducerState) as S;
+    }
+
+    const nextHistoryIndex = getNextHistoryIndex(groupKey);
 
     if (action.type === ActionType.LoadPrevSave) {
       if (history.length === 0) {
         return reducerState;
       }
 
-      const nextState = history[history.length - Math.min(nextHistoriesIndex, history.length)] as S;
+      const nextState = history[history.length - Math.min(nextHistoryIndex, history.length)] as S;
 
       // Add history point if we not in travel
-      if (getHistoriesIndex() === 0) {
+      if (getHistoryIndex(groupKey) === 0) {
         pushToHistory(history, reducerState);
       }
 
@@ -55,7 +74,7 @@ export function savesReducerWrapper<S>(
         return reducerState;
       }
 
-      return history[history.length - Math.min(nextHistoriesIndex, history.length)] as S;
+      return history[history.length - Math.min(nextHistoryIndex, history.length)] as S;
     }
 
     if (action.type === ActionType.AddSave) {
@@ -69,3 +88,5 @@ export function savesReducerWrapper<S>(
     return reducerState;
   };
 }
+
+export { savesReducerWrapper }

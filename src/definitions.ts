@@ -1,4 +1,12 @@
 import { Action } from "redux";
+import {TOpaque} from "./types";
+
+export const EMPTY_OBJECT = Object.freeze({});
+
+export type TGroupKey = TOpaque<'GroupKey', string | symbol | number>;
+export type TSaveKey = TOpaque<'SaveKey', string | symbol | number>;
+
+export const DEFAULT_GROUP_KEY: TGroupKey = Symbol('DEFAULT_GROUP_KEY') as TGroupKey;
 
 export type TBaseSaveAction<T = ActionType, P = void> = Action<T> & {
   payload: P;
@@ -15,6 +23,13 @@ export type TSaveActions =
   | TLoadNextSaveDoneAction
   | TSaveSkipAction
 
+export type TValuableSaveActions =
+  | TClearSavesAction
+  | TAddSaveAction
+  | TRemoveLastSavesAction
+  | TLoadPrevSaveAction
+  | TLoadNextSaveAction
+
 export enum ActionType {
   SaveSkip = '@@REDUX_SAVE@@/SaveSkip',
   SavesUpdateReducers = '@@REDUX_SAVE@@/SavesUpdateReducers',
@@ -27,7 +42,7 @@ export enum ActionType {
   LoadNextSaveDone = '@@REDUX_SAVE@@/LoadNextSaveDone',
 }
 
-export const isValuableAction = (actionType: string) => {
+export const isValuableAction = (actionType: ActionType) => {
   switch (actionType) {
     case ActionType.ClearSaves:
     case ActionType.AddSave:
@@ -41,68 +56,75 @@ export const isValuableAction = (actionType: string) => {
   }
 };
 
-export type TSaveUpdateReducersAction = TBaseSaveAction<ActionType.SavesUpdateReducers>;
-export function createSaveUpdateReducersAction(): TSaveUpdateReducersAction {
+export const isValuableReducerAction = (actionType: ActionType) => {
+  return isValuableAction(actionType) || actionType === ActionType.SavesUpdateReducers;
+};
+
+export type TSaveUpdateReducersAction = TBaseSaveAction<ActionType.SavesUpdateReducers, { groupKeys?: TGroupKey[] }>;
+export function createSaveUpdateReducersAction(payload: { groupKeys: TGroupKey[] }): TSaveUpdateReducersAction {
   return {
     type: ActionType.SavesUpdateReducers,
-    payload: undefined,
+    payload,
   }
 }
 
-export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave>;
-export function createAddSaveAction(): TAddSaveAction {
+export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave, { groupKeys?: TGroupKey[] }>;
+export function createAddSaveAction(payload?: { groupKeys?: TGroupKey[] }): TAddSaveAction {
   return {
     type: ActionType.AddSave,
-    payload: undefined,
+    payload: payload || EMPTY_OBJECT,
   }
 }
 
-export type TRemoveLastSavesAction = TBaseSaveAction<ActionType.RemoveLastSaves, number | void>;
-export function createRemoveLastSavesAction(count?: number): TRemoveLastSavesAction {
+export type TRemoveLastSavesAction = TBaseSaveAction<ActionType.RemoveLastSaves, {
+  count?: number | void,
+  groupKeys?: TGroupKey[] | void,
+}>;
+export function createRemoveLastSavesAction(payload?: { groupKeys?: TGroupKey[], count?: number }): TRemoveLastSavesAction {
   return {
     type: ActionType.RemoveLastSaves,
-    payload: count
+    payload: payload || EMPTY_OBJECT,
   }
 }
 
-export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves>;
-export function createClearSavesAction(): TClearSavesAction {
+export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves, { groupKeys?: TGroupKey[] | void }>;
+export function createClearSavesAction(payload?: { groupKeys?: TGroupKey[] }): TClearSavesAction {
   return {
     type: ActionType.ClearSaves,
-    payload: undefined
+    payload: payload || EMPTY_OBJECT,
   }
 }
 
-export type TLoadPrevSaveAction = TBaseSaveAction<ActionType.LoadPrevSave, number | void>;
-export function createLoadPrevSaveAction(count?: number): TLoadPrevSaveAction {
+export type TLoadPrevSaveAction = TBaseSaveAction<ActionType.LoadPrevSave, { groupKeys?: TGroupKey[] | void, count?: number }>;
+export function createLoadPrevSaveAction(payload?: { groupKeys?: TGroupKey[], count?: number }): TLoadPrevSaveAction {
   return {
     type: ActionType.LoadPrevSave,
-    payload: count
+    payload: payload || EMPTY_OBJECT
   }
 }
 
-export type TLoadNextSaveAction = TBaseSaveAction<ActionType.LoadNextSave, number | void>;
-export function createLoadNextSaveAction(count?: number): TLoadNextSaveAction {
+export type TLoadNextSaveAction = TBaseSaveAction<ActionType.LoadNextSave, { groupKeys?: TGroupKey[] | void, count?: number }>;
+export function createLoadNextSaveAction(payload?: { groupKeys?: TGroupKey[], count?: number }): TLoadNextSaveAction {
   return {
     type: ActionType.LoadNextSave,
-    payload: count
+    payload: payload || EMPTY_OBJECT
   }
 }
 
 // Just for trigger business logic
-export type TLoadPrevSaveDoneAction = TBaseSaveAction<ActionType.LoadPrevSaveDone>;
-export function createLoadPrevSaveDoneAction(): TLoadPrevSaveDoneAction {
+export type TLoadPrevSaveDoneAction = TBaseSaveAction<ActionType.LoadPrevSaveDone, { groupKeys?: TGroupKey[] }>;
+export function createLoadPrevSaveDoneAction(payload: { groupKeys: TGroupKey[] }): TLoadPrevSaveDoneAction {
   return {
     type: ActionType.LoadPrevSaveDone,
-    payload: undefined
+    payload
   }
 }
 
-export type TLoadNextSaveDoneAction = TBaseSaveAction<ActionType.LoadNextSaveDone>;
-export function createLoadNextSaveDoneAction(): TLoadNextSaveDoneAction {
+export type TLoadNextSaveDoneAction = TBaseSaveAction<ActionType.LoadNextSaveDone, { groupKeys?: TGroupKey[] }>;
+export function createLoadNextSaveDoneAction(payload: { groupKeys: TGroupKey[] }): TLoadNextSaveDoneAction {
   return {
     type: ActionType.LoadNextSaveDone,
-    payload: undefined
+    payload
   }
 }
 

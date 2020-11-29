@@ -1,3 +1,29 @@
+import {TGroupKey} from "./definitions";
+
+// GroupKeys
+let isDirty: boolean = true;
+let groupKeysArray: TGroupKey[];
+const groupKeysSet = new Set<TGroupKey>();
+
+export function addGroupKey(key: TGroupKey): void {
+  groupKeysSet.add(key);
+  isDirty = true;
+}
+
+export function deleteGroupKey(key: TGroupKey): void {
+  groupKeysSet.delete(key);
+  isDirty = true;
+}
+
+export function getGroupKeys(): TGroupKey[] {
+  if (isDirty) {
+    isDirty = false;
+    groupKeysArray = Array.from(groupKeysSet);
+  }
+
+  return groupKeysArray;
+}
+
 // History
 export type THistory = unknown[];
 
@@ -5,8 +31,8 @@ export function createHistory(): THistory {
   return [];
 }
 
-export function pushToHistory(history: THistory, point: unknown): void {
-  history.push(point);
+export function pushToHistory(history: THistory, snapshot: unknown): void {
+  history.push(snapshot);
 }
 
 export function decreaseHistoryFromTail(history: THistory, length: number): void {
@@ -14,7 +40,7 @@ export function decreaseHistoryFromTail(history: THistory, length: number): void
 }
 
 export function decreaseHistoryFromHead(history: THistory, length: number): void {
-  history.splice(0, Math.max(length, history.length));
+  history.splice(0, Math.min(length, history.length));
 }
 
 export function clearHistory(history: THistory): void {
@@ -22,20 +48,26 @@ export function clearHistory(history: THistory): void {
 }
 
 // Histories
-const histories: THistory[] = [];
+const mapGroupKeyToHistories = new Map<TGroupKey, THistory[]>();
 
-export const getHistories = (): THistory[] => histories;
+export const getHistories = (groupKey: TGroupKey): THistory[] => mapGroupKeyToHistories.get(groupKey)!;
 
-export const decreaseHistories = (length: number): void => {
-  histories.forEach((history) => decreaseHistoryFromTail(history, length));
+export const decreaseHistories = (groupKey: TGroupKey, length: number): void => {
+  getHistories(groupKey).forEach((history) => decreaseHistoryFromTail(history, length));
 };
 
-export const removeHistories = (): void => {
-  histories.length = 0;
+export const deleteHistories = (groupKey: TGroupKey): void => {
+  deleteGroupKey(groupKey);
+  mapGroupKeyToHistories.delete(groupKey);
 };
 
-export const addHistory = (history: THistory): void => {
-  histories.push(history);
+export const addHistory = (groupKey: TGroupKey, history: THistory): void => {
+  if (!mapGroupKeyToHistories.has(groupKey)) {
+    addGroupKey(groupKey);
+    mapGroupKeyToHistories.set(groupKey, []);
+  }
+
+  mapGroupKeyToHistories.get(groupKey)!.push(history);
 };
 
 // Histories index - it's shift for get history point
@@ -44,19 +76,19 @@ export const addHistory = (history: THistory): void => {
 //              ↓ - history point
 // [0] [1] [2] [3] [4]
 
-let historiesIndex = 0;
+const mapGroupToHistoryIndex = new Map<TGroupKey, number>();
 
-export const getHistoriesIndex = (): number => historiesIndex;
+export const getHistoryIndex = (groupKey: TGroupKey): number => mapGroupToHistoryIndex.get(groupKey)!;
 
-export const setHistoriesIndex = (value: number): void => {
-  historiesIndex = value;
+export const setHistoryIndex = (groupKey: TGroupKey, index: number): void => {
+  mapGroupToHistoryIndex.set(groupKey, index);
 };
 
 // Next Histories index
-let nextHistoriesIndex = 0;
+const nextMapGroupToHistoryIndex = new Map<TGroupKey, number>();
 
-export const getNextHistoriesIndex = (): number => nextHistoriesIndex;
+export const getNextHistoryIndex = (groupKey: TGroupKey): number => nextMapGroupToHistoryIndex.get(groupKey)!;
 
-export const setNextHistoriesIndex = (value: number): number => {
-  return (nextHistoriesIndex = value);
+export const setNextHistoryIndex = (groupKey: TGroupKey, index: number): void => {
+  nextMapGroupToHistoryIndex.set(groupKey, index);
 };
