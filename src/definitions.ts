@@ -1,10 +1,23 @@
 import { Action } from "redux";
-import {TOpaque} from "./types";
+import { createGroupSaveKey } from "./helpers";
+import { TOpaque } from "./types";
 
 export const EMPTY_OBJECT = Object.freeze({});
 
 export type TGroupKey = TOpaque<'GroupKey', string | symbol | number>;
-export type TSaveKey = TOpaque<'SaveKey', string | symbol | number>;
+export type TGroupSaveKey = TOpaque<'SaveKey', string | symbol | number>;
+export type TSnapshot = unknown;
+
+export type TGroupSave = {
+  key: TGroupSaveKey
+  groupKey: TGroupKey
+  prevSaveKey: TGroupSaveKey | void
+  nextSaveKey: TGroupSaveKey | void
+}
+
+export type TSave = {
+  snapshot: TSnapshot
+}
 
 export const DEFAULT_GROUP_KEY: TGroupKey = Symbol('DEFAULT_GROUP_KEY') as TGroupKey;
 
@@ -68,11 +81,19 @@ export function createSaveUpdateReducersAction(payload: { groupKeys: TGroupKey[]
   }
 }
 
-export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave, { groupKeys?: TGroupKey[] }>;
-export function createAddSaveAction(payload?: { groupKeys?: TGroupKey[] }): TAddSaveAction {
+export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave, {
+  saveKey: TGroupSaveKey
+  groupKeys?: TGroupKey[],
+}>;
+export function createAddSaveAction(
+  payload?: {
+    saveKey?: TGroupSaveKey,
+    groupKeys?: TGroupKey[]
+  }
+): TAddSaveAction {
   return {
     type: ActionType.AddSave,
-    payload: payload || EMPTY_OBJECT,
+    payload: { saveKey: payload?.saveKey || createGroupSaveKey(), groupKeys: payload?.groupKeys },
   }
 }
 
@@ -87,7 +108,10 @@ export function createRemoveLastSavesAction(payload?: { groupKeys?: TGroupKey[],
   }
 }
 
-export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves, { groupKeys?: TGroupKey[] | void }>;
+// TODO: Add count of deleted saves, add delete by name 
+export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves, {
+  groupKeys?: TGroupKey[] | void
+}>;
 export function createClearSavesAction(payload?: { groupKeys?: TGroupKey[] }): TClearSavesAction {
   return {
     type: ActionType.ClearSaves,

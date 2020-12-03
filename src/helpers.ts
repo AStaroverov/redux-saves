@@ -1,4 +1,55 @@
-import {TGroupKey} from "./definitions";
+import { TGroupKey, TGroupSave, TGroupSaveKey, TSave, TSnapshot } from "./definitions";
+
+export function createGroupSave(
+  groupKey: TGroupKey,
+  saveKey: TGroupSaveKey,
+  prevSaveKey?: TGroupSaveKey | void,
+  nextSaveKey?: TGroupSaveKey | void,
+): TGroupSave { 
+  return { groupKey, key: saveKey, prevSaveKey, nextSaveKey };
+}
+
+// create Group Save key
+let groupSaveIndex = 0;
+export function createGroupSaveKey(): TGroupSaveKey {
+  return `save-${groupSaveIndex++}` as TGroupSaveKey;
+}
+
+// Autosave
+let groupAutoSaveIndex = 0;
+export function updateGroupAutoSaveKey(): void {
+  groupAutoSaveIndex += 1;
+}
+
+export function getGroupAutoSaveKey(): TGroupSaveKey {
+  return `autosave-${groupAutoSaveIndex}` as TGroupSaveKey;
+}
+
+export const mapGroupKeyToNeedAutoSave = new Map<TGroupKey, boolean>();
+export function setGroupChangeState(groupKey: TGroupKey, state: boolean): void {
+  mapGroupKeyToNeedAutoSave.set(groupKey, state);
+}
+
+export function getGroupChangeState(groupKey: TGroupKey): boolean | void {
+  return mapGroupKeyToNeedAutoSave.get(groupKey);
+}
+
+// create Save
+export function createSave(
+  snapshot: TSnapshot,
+): TSave { 
+  return { snapshot };
+}
+
+let currentSaveIndex = 0;
+
+export function getCurrentSaveIndex(): number {
+  return currentSaveIndex;
+}
+
+export function increaseSaveIndex(): number {
+  return ++currentSaveIndex;
+}
 
 // GroupKeys
 let isDirty: boolean = true;
@@ -24,71 +75,101 @@ export function getGroupKeys(): TGroupKey[] {
   return groupKeysArray;
 }
 
-// History
-export type THistory = unknown[];
+// Reducer Saves
+export type TSaveStore = Map<TGroupSaveKey, TSave>;
 
-export function createHistory(): THistory {
-  return [];
+export function createSaveStore(): TSaveStore {
+  return new Map();
 }
 
-export function pushToHistory(history: THistory, snapshot: unknown): void {
-  history.push(snapshot);
+export function getSave(store: TSaveStore, key: TGroupSaveKey): TSave {
+  return store.get(key)!;
 }
 
-export function decreaseHistoryFromTail(history: THistory, length: number): void {
-  history.length = Math.max(history.length - length, 0);
+export const getSaveStoreSize = (store: TSaveStore): number => store.size;
+
+export function addSave(store: TSaveStore, key: TGroupSaveKey, save: TSave): void {
+  store.set(key, save);
 }
 
-export function decreaseHistoryFromHead(history: THistory, length: number): void {
-  history.splice(0, Math.min(length, history.length));
+export function deleteSave(store: TSaveStore, key: TGroupSaveKey): void {
+  store.delete(key);
 }
 
-export function clearHistory(history: THistory): void {
-  history.length = 0;
+export function deleteSaves(store: TSaveStore): void {
+  store.clear();
 }
 
-// Histories
-const mapGroupKeyToHistories = new Map<TGroupKey, THistory[]>();
+// Group Saves Store
+export const groupSaveStore = new Map<TGroupKey, Map<TGroupSaveKey, TGroupSave>>()
 
-export const getHistories = (groupKey: TGroupKey): THistory[] => mapGroupKeyToHistories.get(groupKey)!;
+export function getGroupSaveStoreSize (): number { return groupSaveStore.size; }
 
-export const decreaseHistories = (groupKey: TGroupKey, length: number): void => {
-  getHistories(groupKey).forEach((history) => decreaseHistoryFromTail(history, length));
-};
+export function getGroupSave(groupKey: TGroupKey, saveKey: TGroupSaveKey): TGroupSave {
+  return groupSaveStore.get(groupKey)!.get(saveKey)!;
+}
 
-export const deleteHistories = (groupKey: TGroupKey): void => {
-  deleteGroupKey(groupKey);
-  mapGroupKeyToHistories.delete(groupKey);
-};
-
-export const addHistory = (groupKey: TGroupKey, history: THistory): void => {
-  if (!mapGroupKeyToHistories.has(groupKey)) {
-    addGroupKey(groupKey);
-    mapGroupKeyToHistories.set(groupKey, []);
+export function addGroupSave(save: TGroupSave): void {
+  if (!groupSaveStore.has(save.groupKey)) {
+    groupSaveStore.set(save.groupKey, new Map());
   }
 
-  mapGroupKeyToHistories.get(groupKey)!.push(history);
+  groupSaveStore.get(save.groupKey)!.set(save.key, save);
+}
+
+export function deleteGroupSave(groupKey: TGroupKey, saveKey: TGroupSaveKey): void {
+  groupSaveStore.get(groupKey)!.delete(saveKey);
+}
+
+export function clearGroupSaveStore(key: TGroupKey): void {
+  groupSaveStore.get(key)?.clear();
+}
+
+// last group save
+const mapGroupKeyToCurrentGroupSaveKey = new Map<TGroupKey, TGroupSaveKey | void>();
+
+export function setCurrentGroupSaveKey(key: TGroupKey, saveKey: TGroupSaveKey | void): void {
+  mapGroupKeyToCurrentGroupSaveKey.set(key, saveKey);
+}
+export function getCurrentGroupSaveKey(key: TGroupKey): TGroupSaveKey | void {
+  return mapGroupKeyToCurrentGroupSaveKey.get(key);
+}
+
+// groupSave iterator
+export function groupSavesIterator(
+  groupKey: TGroupKey,
+  groupSaveKey: TGroupSaveKey,
+  cb: (groupSave: TGroupSave) => TGroupSaveKey | void,
+): TGroupSave | void {
+  let groupSave: TGroupSave | void = getGroupSave(groupKey, groupSaveKey);
+  let tmpGroupSave: TGroupSave | void;
+  
+  while (groupSave !== undefined) {
+    tmpGroupSave = groupSave;
+
+    const key = cb(groupSave);
+
+    groupSave = key ? getGroupSave(groupKey, key) : undefined;
+  }
+
+  return tmpGroupSave;
+}
+
+// Save stores
+const mapGroupKeyToSaveStores = new Map<TGroupKey, TSaveStore[]>();
+
+export const getSaveStores = (groupKey: TGroupKey): TSaveStore[] => mapGroupKeyToSaveStores.get(groupKey)!;
+
+export const deleteSaveStores = (groupKey: TGroupKey): void => {
+  deleteGroupKey(groupKey);
+  mapGroupKeyToSaveStores.delete(groupKey);
 };
 
-// Histories index - it's shift for get history point
-// Example we have 5 points in history and histories index == 2
-// maxHistoryLength(5) - 2(histories index) = 3(history point for each reducer);
-//              ↓ - history point
-// [0] [1] [2] [3] [4]
+export const registerSaveStore = (groupKey: TGroupKey, store: TSaveStore): void => {
+  if (!mapGroupKeyToSaveStores.has(groupKey)) {
+    addGroupKey(groupKey);
+    mapGroupKeyToSaveStores.set(groupKey, []);
+  }
 
-const mapGroupToHistoryIndex = new Map<TGroupKey, number>();
-
-export const getHistoryIndex = (groupKey: TGroupKey): number => mapGroupToHistoryIndex.get(groupKey)!;
-
-export const setHistoryIndex = (groupKey: TGroupKey, index: number): void => {
-  mapGroupToHistoryIndex.set(groupKey, index);
-};
-
-// Next Histories index
-const nextMapGroupToHistoryIndex = new Map<TGroupKey, number>();
-
-export const getNextHistoryIndex = (groupKey: TGroupKey): number => nextMapGroupToHistoryIndex.get(groupKey)!;
-
-export const setNextHistoryIndex = (groupKey: TGroupKey, index: number): void => {
-  nextMapGroupToHistoryIndex.set(groupKey, index);
+  mapGroupKeyToSaveStores.get(groupKey)!.push(store);
 };
