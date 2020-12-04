@@ -8,11 +8,9 @@ import {
   TGroupKey,
   TGroupSave,
   TGroupSaveKey,
-  createSaveUpdateReducersAction,
 } from "./definitions";
 import {
   deleteSaveStores,
-  getSaveStores,
   getGroupKeys,
   clearGroupSaveStore,
   addGroupSave,
@@ -24,10 +22,6 @@ import {
   updateGroupAutoSaveKey,
   groupSavesIterator,
   setCurrentGroupSaveKey,
-  getSave,
-  getSaveStoreSize,
-  TSaveStore,
-  deleteSave,
   getGroupChangeState,
   setGroupChangeState
 } from "./helpers";
@@ -40,25 +34,7 @@ const requestIdleCallback =
 
 // Middleware needs for control duplicate points in history and detect significant change,
 
-export function createSavesMiddleware(options?: { limit: number }): Middleware {
-  const limit = options?.limit || 50;
-
-  let scheduled = false;
-  // simple scheduler for decrease histories, if they longer than limit
-  const setSaveStoresForDecreasing = new Set();
-  const scheduleDecreasingSaveStoreByLimit = (saveStore: TSaveStore) => {
-    setSaveStoresForDecreasing.add(saveStore);
-    if (scheduled) {
-      return;
-    }
-    scheduled = true;
-    requestIdleCallback(() => {
-      scheduled = false;
-      setSaveStoresForDecreasing.clear();
-      // TODO: add logic for LIMITS
-    });
-  };
-
+export function createSavesMiddleware(): Middleware {
   return function historyMiddleware(store) {
     return (next) => (action: TValuableSaveActions) => {
       // if action isn't valuable for history we can return default behavior
@@ -128,17 +104,17 @@ export function createSavesMiddleware(options?: { limit: number }): Middleware {
           }
 
           let steps = action.payload.count || 1;
-          const nextSaveKey = getGroupSave(
+          const { nextSaveKey } = getGroupSave(
             key,
             currentGroupSaveKey
-          ).nextSaveKey;
+          );
           const groupSave = groupSavesIterator(
             key,
             currentGroupSaveKey,
-            (gs: TGroupSave) => {
-              deleteGroupSave(gs.groupKey, gs.key);
+            (groupSave: TGroupSave) => {
+              deleteGroupSave(groupSave.groupKey, groupSave.key);
 
-              return steps-- !== 0 ? gs.prevSaveKey : undefined;
+              return steps-- !== 0 ? groupSave.prevSaveKey : undefined;
             }
           );
 
@@ -175,10 +151,18 @@ export function createSavesMiddleware(options?: { limit: number }): Middleware {
           }
 
           let steps = (action.payload.count || 1);
+          let nextGroupSaveKey: TGroupSaveKey;
           const groupSave: TGroupSave = groupSavesIterator(
             key,
             currentGroupSaveKey,
             (groupSave) => {
+              if (nextGroupSaveKey) {
+                groupSave.nextSaveKey = nextGroupSaveKey;
+              }
+
+              // while we load prev saves, we create chain for load next
+              nextGroupSaveKey = groupSave.key;
+
               return steps-- === 0 ? undefined: groupSave.prevSaveKey;
             }
           ) as TGroupSave;
@@ -187,6 +171,16 @@ export function createSavesMiddleware(options?: { limit: number }): Middleware {
             wasUpdatedGroupsKeys.add(key);
             setCurrentGroupSaveKey(key, groupSave.key);
           }
+        });
+      }
+
+      if (
+        action.type === ActionType.AddSave
+        || action.type === ActionType.LoadPrevSave
+        || action.type === ActionType.RemoveLastSaves
+      ) {
+        groupKeys.forEach((groupKey) => {
+          setGroupChangeState(groupKey, false);
         });
       }
 
@@ -213,10 +207,6 @@ export function createSavesMiddleware(options?: { limit: number }): Middleware {
           }
         });
       }
-
-      groupKeys.forEach((groupKey) => {
-        setGroupChangeState(groupKey, false);
-      });
 
       // update public metadata for application
       // store.dispatch(

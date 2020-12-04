@@ -156,7 +156,7 @@ export function groupSavesIterator(
 }
 
 // Save stores
-const mapGroupKeyToSaveStores = new Map<TGroupKey, TSaveStore[]>();
+export const mapGroupKeyToSaveStores = new Map<TGroupKey, TSaveStore[]>();
 
 export const getSaveStores = (groupKey: TGroupKey): TSaveStore[] => mapGroupKeyToSaveStores.get(groupKey)!;
 

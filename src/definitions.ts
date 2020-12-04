@@ -26,7 +26,6 @@ export type TBaseSaveAction<T = ActionType, P = void> = Action<T> & {
 }
 
 export type TSaveActions =
-  | TSaveUpdateReducersAction
   | TAddSaveAction
   | TRemoveLastSavesAction
   | TClearSavesAction
@@ -34,7 +33,6 @@ export type TSaveActions =
   | TLoadNextSaveAction
   | TLoadPrevSaveDoneAction
   | TLoadNextSaveDoneAction
-  | TSaveSkipAction
 
 export type TValuableSaveActions =
   | TClearSavesAction
@@ -44,8 +42,7 @@ export type TValuableSaveActions =
   | TLoadNextSaveAction
 
 export enum ActionType {
-  SaveSkip = '@@REDUX_SAVE@@/SaveSkip',
-  SavesUpdateReducers = '@@REDUX_SAVE@@/SavesUpdateReducers',
+  SetInitState = '@@REDUX_SAVE@@/SetInitState',
   ClearSaves = '@@REDUX_SAVE@@/ClearSaves',
   AddSave = '@@REDUX_SAVE@@/AddSave',
   RemoveLastSaves = '@@REDUX_SAVE@@/RemoveLastsSaves',
@@ -69,15 +66,10 @@ export const isValuableAction = (actionType: ActionType) => {
   }
 };
 
-export const isValuableReducerAction = (actionType: ActionType) => {
-  return isValuableAction(actionType) || actionType === ActionType.SavesUpdateReducers;
-};
-
-export type TSaveUpdateReducersAction = TBaseSaveAction<ActionType.SavesUpdateReducers, { groupKeys?: TGroupKey[] }>;
-export function createSaveUpdateReducersAction(payload: { groupKeys: TGroupKey[] }): TSaveUpdateReducersAction {
+export type TSetInitStateAction = Action<ActionType.SetInitState>;
+export function createSetInitStateAction(): TSetInitStateAction {
   return {
-    type: ActionType.SavesUpdateReducers,
-    payload,
+    type: ActionType.SetInitState,
   }
 }
 
@@ -149,14 +141,5 @@ export function createLoadNextSaveDoneAction(payload: { groupKeys: TGroupKey[] }
   return {
     type: ActionType.LoadNextSaveDone,
     payload
-  }
-}
-
-// Action for skip some valuable action
-export type TSaveSkipAction = TBaseSaveAction<ActionType.SaveSkip>;
-export function createSaveSkipAction(): TSaveSkipAction {
-  return {
-    type: ActionType.SaveSkip,
-    payload: undefined
   }
 }
