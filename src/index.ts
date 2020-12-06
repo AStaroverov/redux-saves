@@ -1,23 +1,25 @@
-import { historyReducer } from "./reducer";
-import { historyReducerWrapper } from "./reducerWrapper";
-import { createHistoryMiddleware } from "./middleware";
-import { ActionType,
-  createHistoryAddPointAction,
-  createHistoryClearAction,
-  createHistoryGoBackAction,
-  createHistoryGoForwardAction,
-  createHistoryRemovePointAction,
+import { savesReducer } from "./reducer";
+import { savesReducerWrapper } from "./reducerWrapper";
+import { createSavesMiddleware } from "./middleware";
+import {
+  ActionType as SavesActionType,
+  createAddSaveAction,
+  createLoadSaveAction,
+  createClearSavesAction,
+  createLoadPrevSaveAction,
+  createLoadNextSaveAction,
+  createRemoveSavesAction,
 } from "./definitions";
 
-export const historyActionType = ActionType;
-
 export {
-  createHistoryMiddleware,
-  historyReducerWrapper,
-  historyReducer,
-  createHistoryAddPointAction,
-  createHistoryRemovePointAction,
-  createHistoryClearAction,
-  createHistoryGoBackAction,
-  createHistoryGoForwardAction,
+  SavesActionType,
+  createSavesMiddleware,
+  savesReducerWrapper,
+  savesReducer,
+  createClearSavesAction,
+  createAddSaveAction,
+  createRemoveSavesAction,
+  createLoadSaveAction,
+  createLoadPrevSaveAction,
+  createLoadNextSaveAction,
 }

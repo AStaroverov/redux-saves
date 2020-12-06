@@ -1,71 +1,184 @@
 import { Reducer, AnyAction } from "redux";
 import {
-  isValuableHistoryAction, ActionType, THistoryActions,
+  ActionType,
+  TSaveActions,
+  TGroupKey,
+  DEFAULT_GROUP_KEY,
+  TSave,
+  TGroupSave,
+  isValuableAction,
+  TGroupSaveKey,
 } from "./definitions";
 import {
-  addHistory,
-  THistory,
-  pushToHistory,
-  createHistory,
-  clearHistory,
-  getHistoriesIndex,
-  getNextHistoriesIndex,
-} from "./common";
+  getCurrentGroupSaveKey,
+  createSaveStore,
+  getSaveStoreSize,
+  groupSavesIterator,
+  getSave,
+  createSave,
+  addSave,
+  clearSaves,
+  TSaveStore,
+  registerSaveStore,
+  setGroupChangeState,
+  getGroupChangeState,
+  deleteSave,
+  isGeneratedSaveKey,
+} from "./helpers";
 
-// undoRedoReducerWrapper create for each reducer history and controls the content
-export function historyReducerWrapper<S>(
-  reducer: Reducer<S, AnyAction | THistoryActions>
-): Reducer<S, AnyAction | THistoryActions> {
-  const history: THistory = createHistory();
 
-  return (reducerState: S | undefined, action: AnyAction | THistoryActions): S => {
-    // HistoryUpdateReducers for sync redux-history states and reducers
-    if (action.type === ActionType.HistoryUpdateReducers) {
-      return (history[history.length - Math.min(getHistoriesIndex(), history.length)] ||
-        reducerState) as S;
-    }
+// savesReducerWrapper create for each reducer history and controls the content
+function savesReducerWrapper<S>(
+  groupKeyOrReducer: (string | symbol | number) | Reducer<S, AnyAction | TSaveActions>,
+  optionalReducer?: Reducer<S, AnyAction | TSaveActions>
+): Reducer<S, AnyAction | TSaveActions> {
+  const groupKey: TGroupKey = optionalReducer
+    ? (groupKeyOrReducer as TGroupKey)
+    : DEFAULT_GROUP_KEY;
+  const reducer: Reducer<S, AnyAction | TSaveActions> = optionalReducer
+    ? optionalReducer
+    : groupKeyOrReducer as Reducer<S, AnyAction | TSaveActions>;
 
-    // use default logic for none history actions
-    if (reducerState === undefined || !isValuableHistoryAction(action.type)) {
-      return reducer(reducerState, action);
-    }
+  const saveStore: TSaveStore = createSaveStore();
+  let currentSave: TSave | void;
 
-    // add history each history action, it give understanding that this reducer still alive
-    addHistory(history);
+  return (reducerState: S | undefined, action: AnyAction | TSaveActions): S => {
+    if (
+      // skip on init state
+      reducerState === undefined
+      // use init reducer for none redux-saves actions
+      || !isValuableAction(action.type)
+    ) {
+      const nextState = reducer(reducerState, action);
 
-    const nextHistoriesIndex = getNextHistoriesIndex();
-
-    if (action.type === ActionType.HistoryGoBack) {
-      if (history.length === 0) {
-        return reducerState;
-      }
-
-      const nextState = history[history.length - Math.min(nextHistoriesIndex, history.length)] as S;
-
-      // Add history point if we not in travel
-      if (getHistoriesIndex() === 0) {
-        pushToHistory(history, reducerState);
-      }
+      setGroupChangeState(
+        groupKey,
+        getGroupChangeState(groupKey)
+        || (currentSave === undefined ? true : currentSave.snapshot !== nextState)
+      );
 
       return nextState;
     }
 
-    if (action.type === ActionType.HistoryGoForward) {
-      if (history.length === 0) {
+    // add history each history action, it give understanding that this reducer still alive
+    registerSaveStore(groupKey, saveStore);
+
+    // if action not for this group
+    if (
+      action.payload.groupKeys !== undefined
+      && action.payload.groupKeys.indexOf(groupKey) === -1
+    ) {
+      return reducer(reducerState, action);
+    }
+
+    const storeSize = getSaveStoreSize(saveStore);
+    const groupWasChanged = getGroupChangeState(groupKey) === true;
+    const currentGroupSaveKey = getCurrentGroupSaveKey(groupKey);
+
+    if (
+      (action.type === ActionType.LoadSave || action.type === ActionType.LoadPrevSave)
+      && currentGroupSaveKey
+    ) {
+      if (storeSize === 0) {
+        return reducerState;
+      }
+      
+      if (groupWasChanged) {
+        addSave(saveStore, createSave(currentGroupSaveKey, reducerState));
+      }
+
+      if (action.type === ActionType.LoadSave) {
+        currentSave = getSave(saveStore, action.payload.saveKey);
+
+        if (currentSave) {
+          return currentSave.snapshot as S;
+        }
+      }
+
+      if (action.type === ActionType.LoadPrevSave) {
+        let count = action.payload.count || 1;
+        
+        groupSavesIterator(
+          groupKey,
+          currentGroupSaveKey,
+          (groupSave) => {
+            currentSave = getSave(saveStore, groupSave.key) || currentSave;
+            return count-- === 0 ? undefined : groupSave.prevSaveKey;
+          }
+        ) as TGroupSave;
+
+        if (currentSave) {
+          return currentSave.snapshot as S;
+        }
+      }
+
+      return reducerState;
+    }
+
+    if (action.type === ActionType.LoadNextSave && currentGroupSaveKey) {
+      if (storeSize === 0) {
         return reducerState;
       }
 
-      return history[history.length - Math.min(nextHistoriesIndex, history.length)] as S;
+      let count = action.payload.count || 1;
+      
+      groupSavesIterator(
+        groupKey,
+        currentGroupSaveKey,
+        (groupSave) => {
+          currentSave = getSave(saveStore, groupSave.key) || currentSave;
+          return count-- === 0 ? undefined : groupSave.nextSaveKey;
+        }
+      ) as TGroupSave;
+
+      return currentSave ? currentSave.snapshot as S : reducerState;
     }
 
-    if (action.type === ActionType.HistoryAddPoint) {
-      pushToHistory(history, reducerState);
+    if (action.type === ActionType.RemoveSaves && currentSave) {
+      if (storeSize === 0) {
+        return reducerState;
+      }
+
+      const { saveKeys, exceptSaveKeys } = action.payload;
+
+
+      if (saveKeys === undefined && exceptSaveKeys === undefined && currentSave !== undefined) {
+        deleteSave(saveStore, currentSave.groupSaveKey);
+
+        currentSave = currentGroupSaveKey
+          ? getSave(saveStore, currentGroupSaveKey)
+          : undefined; 
+      }
+
+      if (saveKeys !== undefined) {
+        saveKeys.forEach((saveKey: TGroupSaveKey) => {
+          deleteSave(saveStore, saveKey);
+        });
+      } else if (exceptSaveKeys !== undefined) {
+        saveStore.forEach((_, saveKey) => {
+          if (exceptSaveKeys.indexOf(saveKey) !== -1) {
+            deleteSave(saveStore, saveKey);
+          }
+        });
+      }
+
+      return reducerState;
     }
 
-    if (action.type === ActionType.HistoryClear) {
-      clearHistory(history);
+    if (
+      action.type === ActionType.AddSave
+      && (groupWasChanged || !isGeneratedSaveKey(action.payload.saveKey))
+    ) {
+      addSave(saveStore, currentSave = createSave(action.payload.saveKey, reducerState));
+    }
+
+    if (action.type === ActionType.ClearSaves) {
+      currentSave = undefined;
+      clearSaves(saveStore);
     }
 
     return reducerState;
   };
 }
+
+export { savesReducerWrapper }
