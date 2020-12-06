@@ -16,24 +16,20 @@ import {
   addGroupSave,
   createGroupSave,
   getCurrentGroupSaveKey,
-  getGroupSave,
-  deleteGroupSave,
   getGroupAutoSaveKey,
   updateGroupAutoSaveKey,
   groupSavesIterator,
   setCurrentGroupSaveKey,
   getGroupChangeState,
-  setGroupChangeState
+  setGroupChangeState,
+  groupSaveStore,
+  deleteGroupSaveSafety,
+  isGeneratedSaveKey,
+  getGroupSave
 } from "./helpers";
 import { createSetSaveMetadataAction } from "./reducer";
 
-const requestIdleCallback =
-  // @ts-ignore
-  globalThis.requestIdleCallback ||
-  ((cb: VoidFunction) => globalThis.setTimeout(() => cb(), 3000));
-
 // Middleware needs for control duplicate points in history and detect significant change,
-
 export function createSavesMiddleware(): Middleware {
   return function historyMiddleware(store) {
     return (next) => (action: TValuableSaveActions) => {
@@ -50,7 +46,9 @@ export function createSavesMiddleware(): Middleware {
 
       if (action.type === ActionType.AddSave) {
         groupKeys.forEach((key) => {
-          if (getGroupChangeState(key) === true) {
+          const groupChangeState = getGroupChangeState(key);
+
+          if (groupChangeState) {
             addGroupSave(
               createGroupSave(
                 key,
@@ -58,12 +56,34 @@ export function createSavesMiddleware(): Middleware {
                 getCurrentGroupSaveKey(key),
               )
             );
+
             setCurrentGroupSaveKey(key, action.payload.saveKey);
+          } else {
+            const isUserSaveKey = !isGeneratedSaveKey(action.payload.saveKey);
+            const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+
+            // Cant be situation then groupChangeState === false and we try make duplicate save
+            if (isUserSaveKey && currentGroupSaveKey) {
+              const groupSave = getGroupSave(key, currentGroupSaveKey);
+              
+              addGroupSave(
+                createGroupSave(
+                  key,
+                  action.payload.saveKey,
+                  groupSave.prevSaveKey,
+                )
+              );
+
+              setCurrentGroupSaveKey(key, action.payload.saveKey);
+            }
           }
         });
       }
 
-      if (action.type === ActionType.LoadPrevSave) {
+      if (
+        action.type === ActionType.LoadSave
+        || action.type === ActionType.LoadPrevSave
+      ) {
         updateGroupAutoSaveKey();
 
         groupKeys.forEach((key) => {
@@ -81,6 +101,34 @@ export function createSavesMiddleware(): Middleware {
           }
         });
       }
+      
+      if (action.type === ActionType.RemoveSaves) {
+        groupKeys.forEach((key) => {
+          const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+
+          if (currentGroupSaveKey === undefined) {
+            return;
+          }
+
+          const { saveKeys, exceptSaveKeys } = action.payload;
+
+          if (saveKeys === undefined && exceptSaveKeys === undefined) {
+            deleteGroupSaveSafety(key, currentGroupSaveKey);
+          }
+
+          if (saveKeys !== undefined) {
+            saveKeys.forEach((saveKey) => {
+              deleteGroupSaveSafety(key, saveKey);
+            });
+          } else if (exceptSaveKeys !== undefined) {
+            groupSaveStore.get(key)!.forEach((groupSave) => {
+              if (exceptSaveKeys.indexOf(groupSave.key) !== -1) {
+                deleteGroupSaveSafety(key, groupSave.key);
+              }
+            });
+          }
+        });
+      }
 
       // remove all histories for so as not to store dead reducers
       // (if we unregister reducer dynamic modules)
@@ -92,33 +140,6 @@ export function createSavesMiddleware(): Middleware {
         groupKeys.forEach((key) => {
           clearGroupSaveStore(key);
           setCurrentGroupSaveKey(key, undefined);
-        });
-      }
-
-      if (action.type === ActionType.RemoveLastSaves) {
-        groupKeys.forEach((key) => {
-          const currentGroupSaveKey = getCurrentGroupSaveKey(key);
-
-          if (currentGroupSaveKey === undefined) {
-            return;
-          }
-
-          let steps = action.payload.count || 1;
-          const { nextSaveKey } = getGroupSave(
-            key,
-            currentGroupSaveKey
-          );
-          const groupSave = groupSavesIterator(
-            key,
-            currentGroupSaveKey,
-            (groupSave: TGroupSave) => {
-              deleteGroupSave(groupSave.groupKey, groupSave.key);
-
-              return steps-- !== 0 ? groupSave.prevSaveKey : undefined;
-            }
-          );
-
-          (groupSave as TGroupSave).nextSaveKey = nextSaveKey;
         });
       }
 
@@ -177,7 +198,6 @@ export function createSavesMiddleware(): Middleware {
       if (
         action.type === ActionType.AddSave
         || action.type === ActionType.LoadPrevSave
-        || action.type === ActionType.RemoveLastSaves
       ) {
         groupKeys.forEach((groupKey) => {
           setGroupChangeState(groupKey, false);

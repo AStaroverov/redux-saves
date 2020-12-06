@@ -9,9 +9,10 @@ import {
   createClearSavesAction,
   createLoadPrevSaveAction,
   createLoadNextSaveAction,
-  createRemoveLastSavesAction,
+  createRemoveSavesAction,
   DEFAULT_GROUP_KEY,
-  TGroupKey
+  TGroupKey,
+  createLoadSaveAction
 } from "../definitions";
 
 const R1 = "reducer1";
@@ -163,14 +164,14 @@ describe("redux-saves", () => {
     test("should remove save", () => {
       dispatch(createIncreaseAction(1));
       dispatch(createAddSaveAction());
-      dispatch(createRemoveLastSavesAction());
+      dispatch(createRemoveSavesAction());
 
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
         expect(getSaveStoreSize(store)).toBe(0);
       });
     });
 
-    test("shouldn't add duplicate saves", () => {
+    test("shouldn't add duplicate saves if name is not specified", () => {
       dispatch(createIncreaseAction(1));
       dispatch(createAddSaveAction());
       dispatch(createAddSaveAction());
@@ -179,6 +180,46 @@ describe("redux-saves", () => {
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
         expect(getSaveStoreSize(store)).toBe(1);
       });
+    });
+
+    test("allow add duplicate saves if name is specified", () => {
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction());
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction({ saveKey: 'save-1' }));
+      dispatch(createAddSaveAction({ saveKey: 'copy-1' }));
+      dispatch(createAddSaveAction({ saveKey: 'copy-2' }));
+
+      dispatch(createLoadPrevSaveAction());
+
+      getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
+        expect(getSaveStoreSize(store)).toBe(4);
+      });
+      expect(select((s) => s[R1])).toBe(1);
+
+      dispatch(createLoadNextSaveAction());
+
+      getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
+        expect(getSaveStoreSize(store)).toBe(4);
+      });
+
+      dispatch(createLoadSaveAction({ saveKey: 'save-1' }));
+      expect(select((s) => s[R1])).toBe(2);
+      dispatch(createLoadSaveAction({ saveKey: 'copy-1' }));
+      expect(select((s) => s[R1])).toBe(2);
+      dispatch(createLoadSaveAction({ saveKey: 'copy-2' }));
+      expect(select((s) => s[R1])).toBe(2);
+
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction());
+
+      expect(select((s) => s[R1])).toBe(3);
+      
+      dispatch(createLoadSaveAction({ saveKey: 'save-1' }));
+      expect(select((s) => s[R1])).toBe(2);
+      
+      dispatch(createLoadSaveAction({ saveKey: 'copy-1' }));
+      expect(select((s) => s[R1])).toBe(2);
     });
 
     test("should add save after load prev if state changed", () => {
@@ -323,13 +364,13 @@ describe("redux-saves", () => {
       dispatch(createAddSaveAction());
 
       dispatch(createIncreaseAction(1));
-      dispatch(createAddSaveAction());
+      dispatch(createAddSaveAction({ saveKey: 'save-2' }));
 
       dispatch(createIncreaseAction(1));
       dispatch(createAddSaveAction());
 
       dispatch(createIncreaseAction(1));
-      dispatch(createAddSaveAction());
+      dispatch(createAddSaveAction({ saveKey: 'save-4' }));
 
       dispatch(createIncreaseAction(1));
       dispatch(createAddSaveAction());
@@ -338,14 +379,14 @@ describe("redux-saves", () => {
         expect(getSaveStoreSize(store)).toBe(5);
       });
 
-      dispatch(createRemoveLastSavesAction({ count: 3 }));
+      dispatch(createRemoveSavesAction({ saveKeys: ['save-2', 'save-4'] }));
       
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
-        expect(getSaveStoreSize(store)).toBe(2);
+        expect(getSaveStoreSize(store)).toBe(3);
       });
     });
 
-    test("try remove more saves than exist", () => {
+    test("try remove more saves more than exist", () => {
       dispatch(createIncreaseAction(1));
       dispatch(createAddSaveAction());
 
@@ -356,7 +397,11 @@ describe("redux-saves", () => {
         expect(getSaveStoreSize(store)).toBe(2);
       });
 
-      dispatch(createRemoveLastSavesAction({ count: 99 }));
+      dispatch(createRemoveSavesAction());
+      dispatch(createRemoveSavesAction());
+      dispatch(createRemoveSavesAction());
+      dispatch(createRemoveSavesAction());
+      dispatch(createRemoveSavesAction());
       
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
         expect(getSaveStoreSize(store)).toBe(0);
@@ -381,7 +426,34 @@ describe("redux-saves", () => {
 
       expect(select(s => s[R1])).toBe(2);
 
-      dispatch(createRemoveLastSavesAction());
+      dispatch(createRemoveSavesAction());
+
+      getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
+        expect(getSaveStoreSize(store)).toBe(2);
+      });
+      expect(select(s => s[R1])).toBe(2);
+    });
+
+    test("should correct remove saves and load save", () => {
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction());
+      
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction());
+      
+      dispatch(createIncreaseAction(1));
+      dispatch(createAddSaveAction());
+
+      getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
+        expect(getSaveStoreSize(store)).toBe(3);
+      });
+      
+      dispatch(createLoadPrevSaveAction());
+
+      expect(select(s => s[R1])).toBe(2);
+
+      dispatch(createRemoveSavesAction());
+      dispatch(createLoadPrevSaveAction());
 
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
         expect(getSaveStoreSize(store)).toBe(2);
@@ -654,7 +726,7 @@ describe("redux-saves", () => {
       dispatch(createChangeAction(6));
       dispatch(createAddSaveAction());
       dispatch(createAddSaveAction());
-      dispatch(createRemoveLastSavesAction());
+      dispatch(createRemoveSavesAction());
     
       expect(getSaveStoreSize(getSaveStores(G1)[0])).toBe(0);
       expect(getSaveStoreSize(getSaveStores(G2)[0])).toBe(0);
@@ -938,7 +1010,7 @@ describe("redux-saves", () => {
       dispatch(createIncreaseAction(3));
       dispatch(createCollectAction(3));
       dispatch(createChangeAction(3));
-      dispatch(createAddSaveAction());
+      dispatch(createAddSaveAction({ saveKey: 'save-3' }));
     
       dispatch(createIncreaseAction(4));
       dispatch(createCollectAction(4));
@@ -948,7 +1020,7 @@ describe("redux-saves", () => {
       dispatch(createIncreaseAction(5));
       dispatch(createCollectAction(5));
       dispatch(createChangeAction(5));
-      dispatch(createAddSaveAction());
+      dispatch(createAddSaveAction({ saveKey: 'save-5' }));
     
       expect(getSaveStoreSize(getSaveStores(G1)[0])).toBe(3);
       expect(getSaveStoreSize(getSaveStores(G2)[0])).toBe(4);
@@ -957,14 +1029,14 @@ describe("redux-saves", () => {
       expect(select((s) => s[R2])).toEqual([1,2,3,4,5]);
       expect(select((s) => s[R3])).toEqual({ n: 5 });
     
-      dispatch(createRemoveLastSavesAction({ count: 3 }));
+      dispatch(createRemoveSavesAction({ saveKeys: ['save-3'] }));
     
-      expect(getSaveStoreSize(getSaveStores(G1)[0])).toBe(0); // we remoev all saves
-      expect(getSaveStoreSize(getSaveStores(G2)[0])).toBe(1);
-      expect(getSaveStoreSize(getSaveStores(G2)[1])).toBe(1);
-      expect(select((s) => s[R1])).toBe(0);
-      expect(select((s) => s[R2])).toEqual([1,2]);
-      expect(select((s) => s[R3])).toEqual({ n: 2 });
+      expect(getSaveStoreSize(getSaveStores(G1)[0])).toBe(2); // we remoev all saves
+      expect(getSaveStoreSize(getSaveStores(G2)[0])).toBe(3);
+      expect(getSaveStoreSize(getSaveStores(G2)[1])).toBe(3);
+      expect(select((s) => s[R1])).toBe(15);
+      expect(select((s) => s[R2])).toEqual([1,2,3,4,5]);
+      expect(select((s) => s[R3])).toEqual({ n: 5 });
     });
     
     test("should correct load saves", () => {

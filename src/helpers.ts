@@ -9,10 +9,17 @@ export function createGroupSave(
   return { groupKey, key: saveKey, prevSaveKey, nextSaveKey };
 }
 
+// saves prefix
+const SAVE_PREFIX = '@@REDUX-SAVE@@';
+
+export function isGeneratedSaveKey(key: TGroupSaveKey): boolean {
+  return typeof key === 'string' && key.startsWith(SAVE_PREFIX);
+}
+
 // create Group Save key
 let groupSaveIndex = 0;
 export function createGroupSaveKey(): TGroupSaveKey {
-  return `save-${groupSaveIndex++}` as TGroupSaveKey;
+  return `${SAVE_PREFIX}/save-${groupSaveIndex++}` as TGroupSaveKey;
 }
 
 // Autosave
@@ -22,7 +29,7 @@ export function updateGroupAutoSaveKey(): void {
 }
 
 export function getGroupAutoSaveKey(): TGroupSaveKey {
-  return `autosave-${groupAutoSaveIndex}` as TGroupSaveKey;
+  return `${SAVE_PREFIX}/autosave-${groupAutoSaveIndex}` as TGroupSaveKey;
 }
 
 export const mapGroupKeyToNeedAutoSave = new Map<TGroupKey, boolean>();
@@ -36,9 +43,10 @@ export function getGroupChangeState(groupKey: TGroupKey): boolean | void {
 
 // create Save
 export function createSave(
+  groupSaveKey: TGroupSaveKey,
   snapshot: TSnapshot,
 ): TSave { 
-  return { snapshot };
+  return { groupSaveKey, snapshot };
 }
 
 let currentSaveIndex = 0;
@@ -88,15 +96,15 @@ export function getSave(store: TSaveStore, key: TGroupSaveKey): TSave {
 
 export const getSaveStoreSize = (store: TSaveStore): number => store.size;
 
-export function addSave(store: TSaveStore, key: TGroupSaveKey, save: TSave): void {
-  store.set(key, save);
+export function addSave(store: TSaveStore, save: TSave): void {
+  store.set(save.groupSaveKey, save);
 }
 
 export function deleteSave(store: TSaveStore, key: TGroupSaveKey): void {
   store.delete(key);
 }
 
-export function deleteSaves(store: TSaveStore): void {
+export function clearSaves(store: TSaveStore): void {
   store.clear();
 }
 
@@ -119,6 +127,27 @@ export function addGroupSave(save: TGroupSave): void {
 
 export function deleteGroupSave(groupKey: TGroupKey, saveKey: TGroupSaveKey): void {
   groupSaveStore.get(groupKey)!.delete(saveKey);
+}
+
+export function deleteGroupSaveSafety(
+  groupKey: TGroupKey,
+  groupSaveKey: TGroupSaveKey
+): void {
+  const groupSave = getGroupSave(groupKey, groupSaveKey);
+
+  if (groupSave.prevSaveKey && groupSave.nextSaveKey) {
+    const prevGroupSave = getGroupSave(groupKey, groupSave.prevSaveKey);
+    const nextGroupSave = getGroupSave(groupKey, groupSave.nextSaveKey);
+  
+    nextGroupSave.prevSaveKey = prevGroupSave.key;
+    prevGroupSave.nextSaveKey = nextGroupSave.key;
+  }
+
+  deleteGroupSave(groupKey, groupSave.key);
+
+  if (getCurrentGroupSaveKey(groupKey) === groupSaveKey) {
+    setCurrentGroupSaveKey(groupKey, groupSave.prevSaveKey);
+  }
 }
 
 export function clearGroupSaveStore(key: TGroupKey): void {

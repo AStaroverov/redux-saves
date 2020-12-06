@@ -6,8 +6,8 @@ import {
   DEFAULT_GROUP_KEY,
   TSave,
   TGroupSave,
-  createSetInitStateAction,
   isValuableAction,
+  TGroupSaveKey,
 } from "./definitions";
 import {
   getCurrentGroupSaveKey,
@@ -17,12 +17,13 @@ import {
   getSave,
   createSave,
   addSave,
-  deleteSaves,
+  clearSaves,
   TSaveStore,
   registerSaveStore,
   setGroupChangeState,
   getGroupChangeState,
   deleteSave,
+  isGeneratedSaveKey,
 } from "./helpers";
 
 
@@ -39,7 +40,7 @@ function savesReducerWrapper<S>(
     : groupKeyOrReducer as Reducer<S, AnyAction | TSaveActions>;
 
   const saveStore: TSaveStore = createSaveStore();
-  let lastSave: TSave | void;
+  let currentSave: TSave | void;
 
   return (reducerState: S | undefined, action: AnyAction | TSaveActions): S => {
     if (
@@ -53,7 +54,7 @@ function savesReducerWrapper<S>(
       setGroupChangeState(
         groupKey,
         getGroupChangeState(groupKey)
-        || (lastSave === undefined ? true : lastSave.snapshot !== nextState)
+        || (currentSave === undefined ? true : currentSave.snapshot !== nextState)
       );
 
       return nextState;
@@ -72,100 +73,108 @@ function savesReducerWrapper<S>(
 
     const storeSize = getSaveStoreSize(saveStore);
     const groupWasChanged = getGroupChangeState(groupKey) === true;
-    const сurrentGroupSaveKey = getCurrentGroupSaveKey(groupKey);
+    const currentGroupSaveKey = getCurrentGroupSaveKey(groupKey);
 
-    if (action.type === ActionType.LoadPrevSave && сurrentGroupSaveKey) {
+    if (
+      (action.type === ActionType.LoadSave || action.type === ActionType.LoadPrevSave)
+      && currentGroupSaveKey
+    ) {
       if (storeSize === 0) {
         return reducerState;
       }
       
       if (groupWasChanged) {
-        addSave(saveStore, сurrentGroupSaveKey, createSave(reducerState));
+        addSave(saveStore, createSave(currentGroupSaveKey, reducerState));
       }
 
-      let save: TSave | void;
-      let steps = action.payload.count || 1;
+      if (action.type === ActionType.LoadSave) {
+        currentSave = getSave(saveStore, action.payload.saveKey);
+
+        if (currentSave) {
+          return currentSave.snapshot as S;
+        }
+      }
+
+      if (action.type === ActionType.LoadPrevSave) {
+        let count = action.payload.count || 1;
+        
+        groupSavesIterator(
+          groupKey,
+          currentGroupSaveKey,
+          (groupSave) => {
+            currentSave = getSave(saveStore, groupSave.key) || currentSave;
+            return count-- === 0 ? undefined : groupSave.prevSaveKey;
+          }
+        ) as TGroupSave;
+
+        if (currentSave) {
+          return currentSave.snapshot as S;
+        }
+      }
+
+      return reducerState;
+    }
+
+    if (action.type === ActionType.LoadNextSave && currentGroupSaveKey) {
+      if (storeSize === 0) {
+        return reducerState;
+      }
+
+      let count = action.payload.count || 1;
       
       groupSavesIterator(
         groupKey,
-        сurrentGroupSaveKey,
+        currentGroupSaveKey,
         (groupSave) => {
-          save = getSave(saveStore, groupSave.key) || save;
-          return steps-- === 0 ? undefined : groupSave.prevSaveKey;
+          currentSave = getSave(saveStore, groupSave.key) || currentSave;
+          return count-- === 0 ? undefined : groupSave.nextSaveKey;
         }
       ) as TGroupSave;
 
-      // @ts-ignore
-      if (save !== undefined) {
-        lastSave = save;
-        return save.snapshot as S;
+      return currentSave ? currentSave.snapshot as S : reducerState;
+    }
+
+    if (action.type === ActionType.RemoveSaves && currentSave) {
+      if (storeSize === 0) {
+        return reducerState;
+      }
+
+      const { saveKeys, exceptSaveKeys } = action.payload;
+
+
+      if (saveKeys === undefined && exceptSaveKeys === undefined && currentSave !== undefined) {
+        deleteSave(saveStore, currentSave.groupSaveKey);
+
+        currentSave = currentGroupSaveKey
+          ? getSave(saveStore, currentGroupSaveKey)
+          : undefined; 
+      }
+
+      if (saveKeys !== undefined) {
+        saveKeys.forEach((saveKey: TGroupSaveKey) => {
+          deleteSave(saveStore, saveKey);
+        });
+      } else if (exceptSaveKeys !== undefined) {
+        saveStore.forEach((_, saveKey) => {
+          if (exceptSaveKeys.indexOf(saveKey) !== -1) {
+            deleteSave(saveStore, saveKey);
+          }
+        });
       }
 
       return reducerState;
     }
 
-    if (action.type === ActionType.LoadNextSave && сurrentGroupSaveKey) {
-      if (storeSize === 0) {
-        return reducerState;
-      }
-
-      let save: TSave | void;
-      let steps = action.payload.count || 1;
-      const groupSave = groupSavesIterator(
-        groupKey,
-        сurrentGroupSaveKey,
-        (groupSave) => {
-          save = getSave(saveStore, groupSave.key) || save;
-          return steps-- === 0 ? undefined : groupSave.nextSaveKey;
-        }
-      ) as TGroupSave;
-
-      // @ts-ignore
-      if (save !== undefined) {
-        lastSave = save;
-        return save.snapshot as S;
-      }
-
-      return reducerState;
-    }
-
-    if (action.type === ActionType.RemoveLastSaves && сurrentGroupSaveKey) {
-      if (storeSize === 0) {
-        return reducerState;
-      }
-      
-      let steps = action.payload.count || 1;
-      const groupSave = groupSavesIterator(
-        groupKey,
-        сurrentGroupSaveKey,
-        (groupSave) => {
-          deleteSave(saveStore, groupSave.key);
-
-          return --steps === 0 ? undefined : groupSave.prevSaveKey;
-        }
-      ) as TGroupSave;
-
-      if (groupSave.prevSaveKey) {
-        const save = getSave(saveStore, groupSave.prevSaveKey);
-
-        if (save) {
-          lastSave = save;
-          return save.snapshot as S;
-        }
-      }
-
-      // all saves deleted, return to initial state
-      return reducer(undefined, createSetInitStateAction());
-    }
-
-    if (action.type === ActionType.AddSave && groupWasChanged) {
-      lastSave = createSave(reducerState);
-      addSave(saveStore, action.payload.saveKey, lastSave);
+    if (
+      action.type === ActionType.AddSave
+      && (groupWasChanged || !isGeneratedSaveKey(action.payload.saveKey))
+    ) {
+      addSave(saveStore, currentSave = createSave(action.payload.saveKey, reducerState));
     }
 
     if (action.type === ActionType.ClearSaves) {
-      lastSave = undefined;
-      deleteSaves(saveStore);
+      currentSave = undefined;
+      clearSaves(saveStore);
     }
 
     return reducerState;

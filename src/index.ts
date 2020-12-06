@@ -7,7 +7,7 @@ import {
   createClearSavesAction,
   createLoadPrevSaveAction,
   createLoadNextSaveAction,
-  createRemoveLastSavesAction,
+  createRemoveSavesAction,
 } from "./definitions";
 
 export {
@@ -16,7 +16,7 @@ export {
   savesReducerWrapper,
   savesReducer,
   createAddSaveAction,
-  createRemoveLastSavesAction,
+  createRemoveSavesAction as createRemoveLastSavesAction,
   createClearSavesAction,
   createLoadPrevSaveAction,
   createLoadNextSaveAction,
