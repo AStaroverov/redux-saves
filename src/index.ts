@@ -4,6 +4,7 @@ import { createSavesMiddleware } from "./middleware";
 import {
   ActionType as SavesActionType,
   createAddSaveAction,
+  createLoadSaveAction,
   createClearSavesAction,
   createLoadPrevSaveAction,
   createLoadNextSaveAction,
@@ -15,9 +16,10 @@ export {
   createSavesMiddleware,
   savesReducerWrapper,
   savesReducer,
-  createAddSaveAction,
-  createRemoveSavesAction as createRemoveLastSavesAction,
   createClearSavesAction,
+  createAddSaveAction,
+  createRemoveSavesAction,
+  createLoadSaveAction,
   createLoadPrevSaveAction,
   createLoadNextSaveAction,
 }
