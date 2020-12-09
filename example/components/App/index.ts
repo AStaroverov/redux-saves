@@ -1,8 +1,8 @@
 import { Component, html } from 'uland';
 import { Group, TGroup } from '../Group';
-import { StackNames, TStackItem, TStacksState } from '../../store/stackReducer';
 import { useSelector } from '../../utils/useSelector';
 import { useStyles } from '../../utils/useStyles';
+import { ReduceGroups, ReducerNames, TState } from '../../store';
 
 const styles = {
     app: {
@@ -11,13 +11,11 @@ const styles = {
 }
 export const App = Component(() => {
     const s = useStyles(styles);
-    const stacks = useSelector((state) => {
-        return state.stacks;
-    });
+    const state = useSelector((state) => state);
 
-    const g1: TGroup = createGroupProps('group 1', [StackNames.stack1], stacks);
-    const g2: TGroup = createGroupProps('group 2', [StackNames.stack2], stacks);
-    const g3: TGroup = createGroupProps('group 3', [StackNames.stack3, StackNames.stack4], stacks);
+    const g1: TGroup = createGroupProps(ReduceGroups.group1, [ReducerNames.stack1], state);
+    const g2: TGroup = createGroupProps(ReduceGroups.group2, [ReducerNames.stack2], state);
+    const g3: TGroup = createGroupProps(ReduceGroups.group3, [ReducerNames.stack3, ReducerNames.stack4], state);
 
     return html`
         <div class=${s.app}>
@@ -28,13 +26,13 @@ export const App = Component(() => {
     `;
 });
 
-function createGroupProps(groupName: string, stackNames: StackNames[], stacks: TStacksState): TGroup {
+function createGroupProps(groupName: string, reducerNames: ReducerNames[], state: TState): TGroup {
     return {
         name: groupName,
-        stacks: stackNames.map((stackName) => {
+        stacks: reducerNames.map((reducerName) => {
             return {
-                name: stackName,
-                items: stacks[stackName]
+                name: reducerName,
+                items: state[reducerName]
             };
         }),
     }

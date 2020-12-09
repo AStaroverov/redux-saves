@@ -1,5 +1,5 @@
 import { Component, html, useCallback } from 'uland';
-import { stackActions, StackNames } from '../../store/stackReducer';
+import { actions, ReducerNames } from '../../store';
 import { useDispatch } from '../../utils/useDispatch';
 import { useStyles } from '../../utils/useStyles';
 import { Button } from '../Button';
@@ -14,26 +14,34 @@ const stackStyles = {
         alignItems: 'center',
         flexDirection: 'column',
         justifyContent: 'flex-end',
-        width: 110,
+        width: 140,
         height: 300,
         padding: 5,
+        border: '1px solid #eee',
+        borderTop: 'none',
     },
     item: {
         margin: 5
+    },
+    name: {
+        padding: 10
     }
 }
 
 let itemIndex = 0;
-export const Stack = Component((stack: StackNames, items: TStackItem[]) => {
+export const Stack = Component((stack: ReducerNames, items: TStackItem[]) => {
     const s = useStyles(stackStyles);
     const dispatch = useDispatch();
     const addItem = () => {
-        dispatch(stackActions.add({ stack: stack, value: `item-${itemIndex++}` }));
+        dispatch(actions[stack].add({ value: `item-${itemIndex++}` }));
     };
     return html`
         <div class=${s.stack}>
             ${items.map((item) => StackItem({ class: s.item, stack, item }))}
             ${Button({ children: 'Add Item', onClick: addItem })}
+            <div class="${s.name}">
+                Reducer: ${stack}
+            </div>
         </div>
     `;
 });
@@ -73,11 +81,11 @@ const stackItemStyles = {
     }
 }
 
-export const StackItem = Component((props: { class: string, stack: StackNames, item: TStackItem }) => {
+export const StackItem = Component((props: { class: string, stack: ReducerNames, item: TStackItem }) => {
     const s = useStyles(stackItemStyles);
     const dis = useDispatch();
     const onDelete = useCallback(() => dis(
-        stackActions.delete({ stack: props.stack, value: props.item.value })
+        actions[props.stack].delete({ value: props.item.value })
     ));
     const cn = `${s.item} ${props.class}`;
 

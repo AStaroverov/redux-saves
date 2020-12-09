@@ -1,15 +1,15 @@
 import { Component, html } from 'uland';
 import { createAddSaveAction, createLoadNextSaveAction, createLoadPrevSaveAction } from '../../../src';
 import { Stack, TStackItem } from '../Stack';
-import { StackNames } from '../../store/stackReducer';
 import { useDispatch } from '../../utils/useDispatch';
 import { useStyles } from '../../utils/useStyles';
 import { Button } from '../Button';
+import { ReducerNames } from '../../store';
 
 export type TGroup = {
     name: string,
     stacks: {
-        name: StackNames,
+        name: ReducerNames,
         items: TStackItem[]
     }[]
 };
@@ -31,7 +31,6 @@ const styles = {
         margin: 5,
         border: '1px solid #eee',
         borderTop: 'none',
-        borderBottom: 'none',
 
         '& > *': {
             margin: 5,
@@ -51,10 +50,13 @@ export const Group = Component((group: TGroup) => {
     const s = useStyles(styles);
     const dispatch = useDispatch();
     const onsave = () => dispatch(
-        createAddSaveAction({ groupKeys: [group.name], saveKey: `my-save-${saveIndex++}` })
+        createAddSaveAction({
+            groupKeys: [group.name],
+            saveKey: `my-save-${saveIndex++}`
+        })
     );
-    const onloadprev = () => dispatch(createLoadPrevSaveAction());
-    const onnextsave = () => dispatch(createLoadNextSaveAction());
+    const onloadprev = () => dispatch(createLoadPrevSaveAction({ groupKeys: [group.name] }));
+    const onnextsave = () => dispatch(createLoadNextSaveAction({ groupKeys: [group.name] }));
 
     return html`
         <div class=${s.group}>

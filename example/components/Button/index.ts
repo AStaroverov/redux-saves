@@ -3,6 +3,7 @@ import { useStyles } from "../../utils/useStyles";
 
 const styles = {
     btn: {
+        userSelect: 'none',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',

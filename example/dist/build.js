@@ -79,6 +79,25 @@
   var isBrowser = (typeof window === "undefined" ? "undefined" : _typeof(window)) === "object" && (typeof document === "undefined" ? "undefined" : _typeof(document)) === "object" && document.nodeType === 9;
   var module_default = isBrowser;
 
+  // node_modules/tiny-warning/dist/tiny-warning.esm.js
+  var isProduction = false;
+  function warning(condition, message) {
+    if (!isProduction) {
+      if (condition) {
+        return;
+      }
+      var text2 = "Warning: " + message;
+      if (typeof console !== "undefined") {
+        console.warn(text2);
+      }
+      try {
+        throw Error(text2);
+      } catch (x2) {
+      }
+    }
+  }
+  var tiny_warning_esm_default = warning;
+
   // node_modules/@babel/runtime/helpers/esm/createClass.js
   function _defineProperties(target, props) {
     for (var i2 = 0; i2 < props.length; i2++) {
@@ -154,7 +173,7 @@
     if (rule)
       return rule;
     if (name[0] === "@") {
-      void 0;
+      tiny_warning_esm_default(false, "[JSS] Unknown rule " + name);
     }
     return null;
   }
@@ -302,7 +321,7 @@
       }
       var sheet = this.options.sheet;
       if (sheet && sheet.attached) {
-        void 0;
+        tiny_warning_esm_default(false, '[JSS] Rule is not linked. Missing sheet option "link: true".');
       }
       return this;
     };
@@ -468,7 +487,7 @@
         this.name = nameMatch[1];
       } else {
         this.name = "noname";
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] Bad keyframes name " + key);
       }
       this.key = this.type + "-" + this.name;
       this.options = options;
@@ -511,7 +530,7 @@
         if (name in keyframes) {
           return keyframes[name];
         }
-        void 0;
+        tiny_warning_esm_default(false, '[JSS] Referenced keyframes rule "' + name + '" is not defined.');
         return match;
       });
     }
@@ -1021,7 +1040,7 @@
           if (name in registry2) {
             registry2[name].push(plugin2[name]);
           } else {
-            void 0;
+            tiny_warning_esm_default(false, '[JSS] Unknown hook "' + name + '".');
           }
         }
         return registry2;
@@ -1101,22 +1120,22 @@
     return function(rule, sheet) {
       ruleCounter += 1;
       if (ruleCounter > maxRules) {
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] You might have a memory leak. Rule counter is at " + ruleCounter + ".");
       }
       var jssId = "";
-      var prefix3 = "";
+      var prefix4 = "";
       if (sheet) {
         if (sheet.options.classNamePrefix) {
-          prefix3 = sheet.options.classNamePrefix;
+          prefix4 = sheet.options.classNamePrefix;
         }
         if (sheet.options.jss.id != null) {
           jssId = String(sheet.options.jss.id);
         }
       }
       if (options.minify) {
-        return "" + (prefix3 || "c") + moduleId + jssId + ruleCounter;
+        return "" + (prefix4 || "c") + moduleId + jssId + ruleCounter;
       }
-      return prefix3 + rule.key + "-" + moduleId + (jssId ? "-" + jssId : "") + "-" + ruleCounter;
+      return prefix4 + rule.key + "-" + moduleId + (jssId ? "-" + jssId : "") + "-" + ruleCounter;
     };
   };
   var memoize = function memoize2(fn2) {
@@ -1165,7 +1184,7 @@
         cssRule.style.removeProperty(prop);
       }
     } catch (err) {
-      void 0;
+      tiny_warning_esm_default(false, '[JSS] DOMException "' + err.message + '" was thrown. Tried to remove property "' + prop + '".');
     }
   };
   var setSelector = function setSelector2(cssRule, selectorText) {
@@ -1230,7 +1249,7 @@
           node: comment.nextSibling
         };
       }
-      void 0;
+      tiny_warning_esm_default(false, '[JSS] Insertion point "' + insertionPoint + '" not found.');
     }
     return false;
   }
@@ -1247,7 +1266,7 @@
       if (parentNode)
         parentNode.insertBefore(style, insertionPointElement.nextSibling);
       else
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] Insertion point is not in the DOM.");
       return;
     }
     getHead().appendChild(style);
@@ -1266,7 +1285,7 @@
         _c.appendRule(rule);
       }
     } catch (err) {
-      void 0;
+      tiny_warning_esm_default(false, "[JSS] " + err.message);
       return false;
     }
     return container.cssRules[index];
@@ -1561,10 +1580,10 @@
         var fnRule = styleRule[fnRuleNs];
         if (fnRule) {
           styleRule.style = fnRule(data2) || {};
-          if (false) {
+          if (true) {
             for (var prop in styleRule.style) {
               if (typeof styleRule.style[prop] === "function") {
-                void 0;
+                tiny_warning_esm_default(false, "[JSS] Function values inside function rules are not supported.");
                 break;
               }
             }
@@ -1654,7 +1673,7 @@
         continue;
       var colonIndex = decl.indexOf(":");
       if (colonIndex === -1) {
-        void 0;
+        tiny_warning_esm_default(false, '[JSS] Malformed CSS string "' + decl + '"');
         continue;
       }
       var prop = decl.substr(0, colonIndex).trim();
@@ -1818,7 +1837,7 @@
       if (!refRule)
         return;
       if (refRule === rule) {
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] A rule tries to extend itself \n" + rule.toString());
         return;
       }
       var parent = refRule.options.parent;
@@ -1918,7 +1937,7 @@
           rule = rule;
           return rule.selector;
         }
-        void 0;
+        tiny_warning_esm_default(false, '[JSS] Could not find the referenced rule "' + key + '" in "' + (container.options.meta || container.toString()) + '".');
         return key;
       };
     }
@@ -2006,11 +2025,11 @@
     if (className[0] === "$") {
       var refRule = parent.getRule(className.substr(1));
       if (!refRule) {
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] Referenced rule is not defined. \n" + rule.toString());
         return false;
       }
       if (refRule === rule) {
-        void 0;
+        tiny_warning_esm_default(false, "[JSS] Cyclic composition detected. \n" + rule.toString());
         return false;
       }
       parent.classes[rule.key] += " " + parent.classes[refRule.key];
@@ -3410,12 +3429,12 @@
   var trimEnd = /\s+$/;
   var isNode = (template, i2) => 0 < i2-- && (node.test(template[i2]) || !notNode.test(template[i2]) && isNode(template, i2));
   var regular = (original, name, extra) => empty.test(name) ? original : `<${name}${extra.replace(trimEnd, "")}></${name}>`;
-  var esm_default5 = (template, prefix3, svg3) => {
+  var esm_default5 = (template, prefix4, svg3) => {
     const text2 = [];
     const {length} = template;
     for (let i2 = 1; i2 < length; i2++) {
       const chunk = template[i2 - 1];
-      text2.push(attr.test(chunk) && isNode(template, i2) ? chunk.replace(attr, (_2, $1, $2) => `${prefix3}${i2 - 1}=${$2 || '"'}${$1}${$2 ? "" : '"'}`) : `${chunk}<!--${prefix3}${i2 - 1}-->`);
+      text2.push(attr.test(chunk) && isNode(template, i2) ? chunk.replace(attr, (_2, $1, $2) => `${prefix4}${i2 - 1}=${$2 || '"'}${$1}${$2 ? "" : '"'}`) : `${chunk}<!--${prefix4}${i2 - 1}-->`);
     }
     text2.push(template[length - 1]);
     const output = text2.join("").trim();
@@ -3921,8 +3940,8 @@
   function createFor(uhtml2) {
     const cache7 = esm_default4(new WeakMap());
     return (entry, id) => {
-      const store4 = cache7.get(entry) || cache7.set(entry, create6(null));
-      const info = store4[id] || (store4[id] = createCache2(null));
+      const store6 = cache7.get(entry) || cache7.set(entry, create6(null));
+      const info = store6[id] || (store6[id] = createCache2(null));
       return (template, ...values) => {
         unrollValues2(info, values);
         return uhtml2.for(entry, id)(template, ...values);
@@ -3956,9 +3975,16 @@
   function getGroupChangeState(groupKey) {
     return mapGroupKeyToNeedAutoSave.get(groupKey);
   }
+  function createSave(groupSaveKey, snapshot) {
+    return {groupSaveKey, snapshot};
+  }
   var isDirty = true;
   var groupKeysArray;
   var groupKeysSet = new Set();
+  function addGroupKey(key) {
+    groupKeysSet.add(key);
+    isDirty = true;
+  }
   function deleteGroupKey(key) {
     groupKeysSet.delete(key);
     isDirty = true;
@@ -3969,6 +3995,22 @@
       groupKeysArray = Array.from(groupKeysSet);
     }
     return groupKeysArray;
+  }
+  function createSaveStore() {
+    return new Map();
+  }
+  function getSave(store6, key) {
+    return store6.get(key);
+  }
+  var getSaveStoreSize = (store6) => store6.size;
+  function addSave(store6, save) {
+    store6.set(save.groupSaveKey, save);
+  }
+  function deleteSave(store6, key) {
+    store6.delete(key);
+  }
+  function clearSaves(store6) {
+    store6.clear();
   }
   var groupSaveStore = new Map();
   function getGroupSave(groupKey, saveKey) {
@@ -4020,6 +4062,13 @@
   var deleteSaveStores = (groupKey) => {
     deleteGroupKey(groupKey);
     mapGroupKeyToSaveStores.delete(groupKey);
+  };
+  var registerSaveStore = (groupKey, store6) => {
+    if (!mapGroupKeyToSaveStores.has(groupKey)) {
+      addGroupKey(groupKey);
+      mapGroupKeyToSaveStores.set(groupKey, []);
+    }
+    mapGroupKeyToSaveStores.get(groupKey).push(store6);
   };
 
   // ../src/definitions.ts
@@ -4085,9 +4134,97 @@
     };
   }
 
+  // ../src/reducerWrapper.ts
+  function savesReducerWrapper(groupKeyOrReducer, optionalReducer) {
+    const groupKey = optionalReducer ? groupKeyOrReducer : DEFAULT_GROUP_KEY;
+    const reducer2 = optionalReducer ? optionalReducer : groupKeyOrReducer;
+    const saveStore = createSaveStore();
+    let currentSave;
+    return (reducerState, action) => {
+      if (reducerState === void 0 || !isValuableAction(action.type)) {
+        const nextState = reducer2(reducerState, action);
+        setGroupChangeState(groupKey, getGroupChangeState(groupKey) || (currentSave === void 0 ? true : currentSave.snapshot !== nextState));
+        return nextState;
+      }
+      registerSaveStore(groupKey, saveStore);
+      if (action.payload.groupKeys !== void 0 && action.payload.groupKeys.indexOf(groupKey) === -1) {
+        return reducer2(reducerState, action);
+      }
+      const storeSize = getSaveStoreSize(saveStore);
+      const groupWasChanged = getGroupChangeState(groupKey) === true;
+      const currentGroupSaveKey = getCurrentGroupSaveKey(groupKey);
+      if ((action.type === ActionType.LoadSave || action.type === ActionType.LoadPrevSave) && currentGroupSaveKey) {
+        if (storeSize === 0) {
+          return reducerState;
+        }
+        if (groupWasChanged) {
+          addSave(saveStore, createSave(currentGroupSaveKey, reducerState));
+        }
+        if (action.type === ActionType.LoadSave) {
+          currentSave = getSave(saveStore, action.payload.saveKey);
+          if (currentSave) {
+            return currentSave.snapshot;
+          }
+        }
+        if (action.type === ActionType.LoadPrevSave) {
+          let count = action.payload.count || 1;
+          groupSavesIterator(groupKey, currentGroupSaveKey, (groupSave) => {
+            currentSave = getSave(saveStore, groupSave.key) || currentSave;
+            return count-- === 0 ? void 0 : groupSave.prevSaveKey;
+          });
+          if (currentSave) {
+            return currentSave.snapshot;
+          }
+        }
+        return reducerState;
+      }
+      if (action.type === ActionType.LoadNextSave && currentGroupSaveKey) {
+        if (storeSize === 0) {
+          return reducerState;
+        }
+        let count = action.payload.count || 1;
+        groupSavesIterator(groupKey, currentGroupSaveKey, (groupSave) => {
+          currentSave = getSave(saveStore, groupSave.key) || currentSave;
+          return count-- === 0 ? void 0 : groupSave.nextSaveKey;
+        });
+        return currentSave ? currentSave.snapshot : reducerState;
+      }
+      if (action.type === ActionType.RemoveSaves && currentSave) {
+        if (storeSize === 0) {
+          return reducerState;
+        }
+        const {saveKeys, exceptSaveKeys} = action.payload;
+        if (saveKeys === void 0 && exceptSaveKeys === void 0 && currentSave !== void 0) {
+          deleteSave(saveStore, currentSave.groupSaveKey);
+          currentSave = currentGroupSaveKey ? getSave(saveStore, currentGroupSaveKey) : void 0;
+        }
+        if (saveKeys !== void 0) {
+          saveKeys.forEach((saveKey) => {
+            deleteSave(saveStore, saveKey);
+          });
+        } else if (exceptSaveKeys !== void 0) {
+          saveStore.forEach((_2, saveKey) => {
+            if (exceptSaveKeys.indexOf(saveKey) !== -1) {
+              deleteSave(saveStore, saveKey);
+            }
+          });
+        }
+        return reducerState;
+      }
+      if (action.type === ActionType.AddSave && (groupWasChanged || !isGeneratedSaveKey(action.payload.saveKey))) {
+        addSave(saveStore, currentSave = createSave(action.payload.saveKey, reducerState));
+      }
+      if (action.type === ActionType.ClearSaves) {
+        currentSave = void 0;
+        clearSaves(saveStore);
+      }
+      return reducerState;
+    };
+  }
+
   // ../src/middleware.ts
   function createSavesMiddleware() {
-    return function historyMiddleware(store4) {
+    return function historyMiddleware(store6) {
       return (next) => (action) => {
         if (!isValuableAction(action.type)) {
           return next(action);
@@ -4212,12 +4349,12 @@
         }
         if (wasUpdatedGroupsKeys.size > 0) {
           if (action.type === ActionType.LoadPrevSave) {
-            store4.dispatch(createLoadPrevSaveDoneAction({
+            store6.dispatch(createLoadPrevSaveDoneAction({
               groupKeys: Array.from(wasUpdatedGroupsKeys)
             }));
           }
           if (action.type === ActionType.LoadNextSave) {
-            store4.dispatch(createLoadNextSaveDoneAction({
+            store6.dispatch(createLoadNextSaveDoneAction({
               groupKeys: Array.from(wasUpdatedGroupsKeys)
             }));
           }
@@ -4231,7 +4368,7 @@
   function n(n2) {
     for (var t2 = arguments.length, r2 = Array(t2 > 1 ? t2 - 1 : 0), e = 1; e < t2; e++)
       r2[e - 1] = arguments[e];
-    if (false) {
+    if (true) {
       var i2 = Y[n2], o2 = i2 ? typeof i2 == "function" ? i2.apply(null, r2) : i2 : "unknown error nr: " + n2;
       throw Error("[Immer] " + o2);
     }
@@ -4313,7 +4450,7 @@
     tn[n2] || (tn[n2] = t2);
   }
   function _() {
-    return true, U;
+    return U || n(0), U;
   }
   function j(n2, t2) {
     t2 && (b("Patches"), n2.u = [], n2.s = [], n2.v = t2);
@@ -4358,7 +4495,7 @@
     return e.o;
   }
   function A(e, i2, o2, a2, c2, s2) {
-    if (false, t(c2)) {
+    if (c2 === o2 && n(5), t(c2)) {
       var v2 = M(e, c2, s2 && i2 && i2.i !== 3 && !u(i2.D, a2) ? s2.concat(a2) : void 0);
       if (f(o2, a2, v2), !t(v2))
         return;
@@ -4431,10 +4568,10 @@
       var r3 = s2[n2];
       return r3 ? r3.enumerable = t2 : s2[n2] = r3 = {configurable: true, enumerable: t2, get: function() {
         var t3 = this[Q];
-        return false, rn.get(t3, n2);
+        return f2(t3), rn.get(t3, n2);
       }, set: function(t3) {
         var r4 = this[Q];
-        false, rn.set(r4, n2, t3);
+        f2(r4), rn.set(r4, n2, t3);
       }}, r3;
     }
     function e(n2) {
@@ -4531,6 +4668,21 @@
   var L = W ? Symbol.for("immer-draftable") : "__$immer_draftable";
   var Q = W ? Symbol.for("immer-state") : "__$immer_state";
   var V = typeof Symbol != "undefined" && Symbol.iterator || "@@iterator";
+  var Y = {0: "Illegal state", 1: "Immer drafts cannot have computed properties", 2: "This object has been frozen and should not be mutated", 3: function(n2) {
+    return "Cannot use a proxy that has been revoked. Did you pass an object from inside an immer function to an async process? " + n2;
+  }, 4: "An immer producer returned a new value *and* modified its draft. Either return a new value *or* modify the draft.", 5: "Immer forbids circular references", 6: "The first or second argument to `produce` must be a function", 7: "The third argument to `produce` must be a function or undefined", 8: "First argument to `createDraft` must be a plain object, an array, or an immerable object", 9: "First argument to `finishDraft` must be a draft returned by `createDraft`", 10: "The given draft is already finalized", 11: "Object.defineProperty() cannot be used on an Immer draft", 12: "Object.setPrototypeOf() cannot be used on an Immer draft", 13: "Immer only supports deleting array indices", 14: "Immer only supports setting array indices and the 'length' property", 15: function(n2) {
+    return "Cannot apply patch, path doesn't resolve: " + n2;
+  }, 16: 'Sets cannot have "replace" patches.', 17: function(n2) {
+    return "Unsupported patch operation: " + n2;
+  }, 18: function(n2) {
+    return "The plugin for '" + n2 + "' has not been loaded into Immer. To enable the plugin, import and call `enable" + n2 + "()` when initializing your application.";
+  }, 20: "Cannot use proxies if Proxy, Proxy.revocable or Reflect are not available", 21: function(n2) {
+    return "produce can only be called on things that are draftable: plain objects, arrays, Map, Set or classes that are marked with '[immerable]: true'. Got '" + n2 + "'";
+  }, 22: function(n2) {
+    return "'current' expects a draft, got: " + n2;
+  }, 23: function(n2) {
+    return "'original' expects a draft, got: " + n2;
+  }};
   var Z = typeof Reflect != "undefined" && Reflect.ownKeys ? Reflect.ownKeys : Object.getOwnPropertySymbols !== void 0 ? function(n2) {
     return Object.getOwnPropertyNames(n2).concat(Object.getOwnPropertySymbols(n2));
   } : Object.getOwnPropertyNames;
@@ -4587,9 +4739,9 @@
       return arguments[0] = arguments[0][0], t2.apply(this, arguments);
     };
   }), en.deleteProperty = function(t2, r2) {
-    return false, rn.deleteProperty.call(this, t2[0], r2);
+    return isNaN(parseInt(r2)) && n(13), rn.deleteProperty.call(this, t2[0], r2);
   }, en.set = function(t2, r2, e) {
-    return false, rn.set.call(this, t2[0], r2, e, t2[0]);
+    return r2 !== "length" && isNaN(parseInt(r2)) && n(14), rn.set.call(this, t2[0], r2, e, t2[0]);
   };
   var on = function() {
     function e(n2) {
@@ -4649,7 +4801,7 @@
       return o2[Q].C = true, O(i3), o2;
     }, i2.finishDraft = function(t2, r2) {
       var e2 = t2 && t2[Q];
-      false;
+      e2 && e2.C || n(9), e2.I && n(10);
       var i3 = e2.A;
       return j(i3, r2), P(void 0, i3);
     }, i2.setAutoFreeze = function(n2) {
@@ -4825,18 +4977,48 @@
       replaceReducer
     }, _ref2[symbol_observable2.default] = observable, _ref2;
   }
+  function warning2(message) {
+    if (typeof console !== "undefined" && typeof console.error === "function") {
+      console.error(message);
+    }
+    try {
+      throw new Error(message);
+    } catch (e) {
+    }
+  }
   function getUndefinedStateErrorMessage(key, action) {
     var actionType = action && action.type;
     var actionDescription = actionType && 'action "' + String(actionType) + '"' || "an action";
     return "Given " + actionDescription + ', reducer "' + key + '" returned undefined. To ignore an action, you must explicitly return the previous state. If you want this reducer to hold no value, you can return null instead of undefined.';
   }
+  function getUnexpectedStateShapeWarningMessage(inputState, reducers, action, unexpectedKeyCache) {
+    var reducerKeys = Object.keys(reducers);
+    var argumentName = action && action.type === ActionTypes.INIT ? "preloadedState argument passed to createStore" : "previous state received by the reducer";
+    if (reducerKeys.length === 0) {
+      return "Store does not have a valid reducer. Make sure the argument passed to combineReducers is an object whose values are reducers.";
+    }
+    if (!isPlainObject(inputState)) {
+      return "The " + argumentName + ' has unexpected type of "' + {}.toString.call(inputState).match(/\s([a-z|A-Z]+)/)[1] + '". Expected argument to be an object with the following ' + ('keys: "' + reducerKeys.join('", "') + '"');
+    }
+    var unexpectedKeys = Object.keys(inputState).filter(function(key) {
+      return !reducers.hasOwnProperty(key) && !unexpectedKeyCache[key];
+    });
+    unexpectedKeys.forEach(function(key) {
+      unexpectedKeyCache[key] = true;
+    });
+    if (action && action.type === ActionTypes.REPLACE)
+      return;
+    if (unexpectedKeys.length > 0) {
+      return "Unexpected " + (unexpectedKeys.length > 1 ? "keys" : "key") + " " + ('"' + unexpectedKeys.join('", "') + '" found in ' + argumentName + ". ") + "Expected to find one of the known reducer keys instead: " + ('"' + reducerKeys.join('", "') + '". Unexpected keys will be ignored.');
+    }
+  }
   function assertReducerShape(reducers) {
     Object.keys(reducers).forEach(function(key) {
       var reducer2 = reducers[key];
-      var initialState2 = reducer2(void 0, {
+      var initialState = reducer2(void 0, {
         type: ActionTypes.INIT
       });
-      if (typeof initialState2 === "undefined") {
+      if (typeof initialState === "undefined") {
         throw new Error('Reducer "' + key + `" returned undefined during initialization. If the state passed to the reducer is undefined, you must explicitly return the initial state. The initial state may not be undefined. If you don't want to set a value for this reducer, you can use null instead of undefined.`);
       }
       if (typeof reducer2(void 0, {
@@ -4851,9 +5033,9 @@
     var finalReducers = {};
     for (var i2 = 0; i2 < reducerKeys.length; i2++) {
       var key = reducerKeys[i2];
-      if (false) {
+      if (true) {
         if (typeof reducers[key] === "undefined") {
-          warning('No reducer provided for key "' + key + '"');
+          warning2('No reducer provided for key "' + key + '"');
         }
       }
       if (typeof reducers[key] === "function") {
@@ -4862,7 +5044,7 @@
     }
     var finalReducerKeys = Object.keys(finalReducers);
     var unexpectedKeyCache;
-    if (false) {
+    if (true) {
       unexpectedKeyCache = {};
     }
     var shapeAssertionError;
@@ -4878,10 +5060,10 @@
       if (shapeAssertionError) {
         throw shapeAssertionError;
       }
-      if (false) {
+      if (true) {
         var warningMessage = getUnexpectedStateShapeWarningMessage(state2, finalReducers, action, unexpectedKeyCache);
         if (warningMessage) {
-          warning(warningMessage);
+          warning2(warningMessage);
         }
       }
       var hasChanged = false;
@@ -4967,12 +5149,12 @@
     }
     return function(createStore2) {
       return function() {
-        var store4 = createStore2.apply(void 0, arguments);
+        var store6 = createStore2.apply(void 0, arguments);
         var _dispatch = function dispatch() {
           throw new Error("Dispatching while constructing your middleware is not allowed. Other middleware would not be applied to this dispatch.");
         };
         var middlewareAPI = {
-          getState: store4.getState,
+          getState: store6.getState,
           dispatch: function dispatch() {
             return _dispatch.apply(void 0, arguments);
           }
@@ -4980,15 +5162,17 @@
         var chain = middlewares.map(function(middleware2) {
           return middleware2(middlewareAPI);
         });
-        _dispatch = compose.apply(void 0, chain)(store4.dispatch);
-        return _objectSpread2({}, store4, {
+        _dispatch = compose.apply(void 0, chain)(store6.dispatch);
+        return _objectSpread2({}, store6, {
           dispatch: _dispatch
         });
       };
     };
   }
-  if (false) {
-    warning('You are currently using minified code outside of NODE_ENV === "production". This means that you are running a slower development build of Redux. You can use loose-envify (https://github.com/zertosh/loose-envify) for browserify or setting mode to production in webpack (https://webpack.js.org/concepts/mode/) to ensure you have the correct code for your production build.');
+  function isCrushed() {
+  }
+  if (typeof isCrushed.name === "string" && isCrushed.name !== "isCrushed") {
+    warning2('You are currently using minified code outside of NODE_ENV === "production". This means that you are running a slower development build of Redux. You can use loose-envify (https://github.com/zertosh/loose-envify) for browserify or setting mode to production in webpack (https://webpack.js.org/concepts/mode/) to ensure you have the correct code for your production build.');
   }
 
   // node_modules/reselect/es/index.js
@@ -5196,6 +5380,25 @@
     }
     return Object.getPrototypeOf(value) === proto;
   }
+  function getTimeMeasureUtils(maxDelay, fnName) {
+    var elapsed = 0;
+    return {
+      measureTime: function measureTime(fn2) {
+        var started = Date.now();
+        try {
+          return fn2();
+        } finally {
+          var finished = Date.now();
+          elapsed += finished - started;
+        }
+      },
+      warnIfExceeded: function warnIfExceeded() {
+        if (elapsed > maxDelay) {
+          console.warn(fnName + " took " + elapsed + "ms, which is more than the warning threshold of " + maxDelay + "ms. \nIf your state or actions are very large, you may want to disable the middleware as it might cause too much of a slowdown in development mode. See https://redux-toolkit.js.org/api/getDefaultMiddleware for instructions.\nIt is disabled in production builds, so you don't need to worry about that.");
+        }
+      }
+    };
+  }
   var MiddlewareArray = /* @__PURE__ */ function(_Array) {
     _inheritsLoose2(MiddlewareArray2, _Array);
     function MiddlewareArray2() {
@@ -5220,6 +5423,262 @@
     };
     return MiddlewareArray2;
   }(/* @__PURE__ */ _wrapNativeSuper(Array));
+  var isProduction2 = false;
+  var prefix3 = "Invariant failed";
+  function invariant(condition, message) {
+    if (condition) {
+      return;
+    }
+    if (isProduction2) {
+      throw new Error(prefix3);
+    }
+    throw new Error(prefix3 + ": " + (message || ""));
+  }
+  function stringify(obj, serializer, indent, decycler) {
+    return JSON.stringify(obj, getSerialize(serializer, decycler), indent);
+  }
+  function getSerialize(serializer, decycler) {
+    var stack = [], keys = [];
+    if (!decycler)
+      decycler = function decycler2(_2, value) {
+        if (stack[0] === value)
+          return "[Circular ~]";
+        return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]";
+      };
+    return function(key, value) {
+      if (stack.length > 0) {
+        var thisPos = stack.indexOf(this);
+        ~thisPos ? stack.splice(thisPos + 1) : stack.push(this);
+        ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key);
+        if (~stack.indexOf(value))
+          value = decycler.call(this, key, value);
+      } else
+        stack.push(value);
+      return serializer == null ? value : serializer.call(this, key, value);
+    };
+  }
+  function isImmutableDefault(value) {
+    return typeof value !== "object" || value === null || typeof value === "undefined";
+  }
+  function trackForMutations(isImmutable, ignorePaths, obj) {
+    var trackedProperties = trackProperties(isImmutable, ignorePaths, obj);
+    return {
+      detectMutations: function detectMutations() {
+        return _detectMutations(isImmutable, ignorePaths, trackedProperties, obj);
+      }
+    };
+  }
+  function trackProperties(isImmutable, ignorePaths, obj, path) {
+    if (ignorePaths === void 0) {
+      ignorePaths = [];
+    }
+    if (path === void 0) {
+      path = [];
+    }
+    var tracked = {
+      value: obj
+    };
+    if (!isImmutable(obj)) {
+      tracked.children = {};
+      for (var key in obj) {
+        var childPath = path.concat(key);
+        if (ignorePaths.length && ignorePaths.indexOf(childPath.join(".")) !== -1) {
+          continue;
+        }
+        tracked.children[key] = trackProperties(isImmutable, ignorePaths, obj[key], childPath);
+      }
+    }
+    return tracked;
+  }
+  function _detectMutations(isImmutable, ignorePaths, trackedProperty, obj, sameParentRef, path) {
+    if (ignorePaths === void 0) {
+      ignorePaths = [];
+    }
+    if (sameParentRef === void 0) {
+      sameParentRef = false;
+    }
+    if (path === void 0) {
+      path = [];
+    }
+    var prevObj = trackedProperty ? trackedProperty.value : void 0;
+    var sameRef = prevObj === obj;
+    if (sameParentRef && !sameRef && !Number.isNaN(obj)) {
+      return {
+        wasMutated: true,
+        path
+      };
+    }
+    if (isImmutable(prevObj) || isImmutable(obj)) {
+      return {
+        wasMutated: false
+      };
+    }
+    var keysToDetect = {};
+    Object.keys(trackedProperty.children).forEach(function(key2) {
+      keysToDetect[key2] = true;
+    });
+    Object.keys(obj).forEach(function(key2) {
+      keysToDetect[key2] = true;
+    });
+    var keys = Object.keys(keysToDetect);
+    for (var i2 = 0; i2 < keys.length; i2++) {
+      var key = keys[i2];
+      var childPath = path.concat(key);
+      if (ignorePaths.length && ignorePaths.indexOf(childPath.join(".")) !== -1) {
+        continue;
+      }
+      var result = _detectMutations(isImmutable, ignorePaths, trackedProperty.children[key], obj[key], sameRef, childPath);
+      if (result.wasMutated) {
+        return result;
+      }
+    }
+    return {
+      wasMutated: false
+    };
+  }
+  function createImmutableStateInvariantMiddleware(options) {
+    if (options === void 0) {
+      options = {};
+    }
+    if (false) {
+      return function() {
+        return function(next) {
+          return function(action) {
+            return next(action);
+          };
+        };
+      };
+    }
+    var _options = options, _options$isImmutable = _options.isImmutable, isImmutable = _options$isImmutable === void 0 ? isImmutableDefault : _options$isImmutable, ignoredPaths = _options.ignoredPaths, _options$warnAfter = _options.warnAfter, warnAfter = _options$warnAfter === void 0 ? 32 : _options$warnAfter, ignore = _options.ignore;
+    ignoredPaths = ignoredPaths || ignore;
+    var track = trackForMutations.bind(null, isImmutable, ignoredPaths);
+    return function(_ref) {
+      var getState = _ref.getState;
+      var state2 = getState();
+      var tracker = track(state2);
+      var result;
+      return function(next) {
+        return function(action) {
+          var measureUtils = getTimeMeasureUtils(warnAfter, "ImmutableStateInvariantMiddleware");
+          measureUtils.measureTime(function() {
+            state2 = getState();
+            result = tracker.detectMutations();
+            tracker = track(state2);
+            !!result.wasMutated ? invariant(false, "A state mutation was detected between dispatches, in the path '" + (result.path || []).join(".") + "'.  This may cause incorrect behavior. (https://redux.js.org/troubleshooting#never-mutate-reducer-arguments)") : void 0;
+          });
+          var dispatchedAction = next(action);
+          measureUtils.measureTime(function() {
+            state2 = getState();
+            result = tracker.detectMutations();
+            tracker = track(state2);
+            result.wasMutated && (!!result.wasMutated ? invariant(false, "A state mutation was detected inside a dispatch, in the path: " + (result.path || []).join(".") + ". Take a look at the reducer(s) handling the action " + stringify(action) + ". (https://redux.js.org/troubleshooting#never-mutate-reducer-arguments)") : void 0);
+          });
+          measureUtils.warnIfExceeded();
+          return dispatchedAction;
+        };
+      };
+    };
+  }
+  function isPlain(val) {
+    return typeof val === "undefined" || val === null || typeof val === "string" || typeof val === "boolean" || typeof val === "number" || Array.isArray(val) || isPlainObject2(val);
+  }
+  function findNonSerializableValue(value, path, isSerializable, getEntries, ignoredPaths) {
+    if (path === void 0) {
+      path = [];
+    }
+    if (isSerializable === void 0) {
+      isSerializable = isPlain;
+    }
+    if (ignoredPaths === void 0) {
+      ignoredPaths = [];
+    }
+    var foundNestedSerializable;
+    if (!isSerializable(value)) {
+      return {
+        keyPath: path.join(".") || "<root>",
+        value
+      };
+    }
+    if (typeof value !== "object" || value === null) {
+      return false;
+    }
+    var entries = getEntries != null ? getEntries(value) : Object.entries(value);
+    var hasIgnoredPaths = ignoredPaths.length > 0;
+    for (var _iterator = entries, _isArray = Array.isArray(_iterator), _i = 0, _iterator = _isArray ? _iterator : _iterator[Symbol.iterator](); ; ) {
+      var _ref;
+      if (_isArray) {
+        if (_i >= _iterator.length)
+          break;
+        _ref = _iterator[_i++];
+      } else {
+        _i = _iterator.next();
+        if (_i.done)
+          break;
+        _ref = _i.value;
+      }
+      var _ref2 = _ref, property = _ref2[0], nestedValue = _ref2[1];
+      var nestedPath = path.concat(property);
+      if (hasIgnoredPaths && ignoredPaths.indexOf(nestedPath.join(".")) >= 0) {
+        continue;
+      }
+      if (!isSerializable(nestedValue)) {
+        return {
+          keyPath: nestedPath.join("."),
+          value: nestedValue
+        };
+      }
+      if (typeof nestedValue === "object") {
+        foundNestedSerializable = findNonSerializableValue(nestedValue, nestedPath, isSerializable, getEntries, ignoredPaths);
+        if (foundNestedSerializable) {
+          return foundNestedSerializable;
+        }
+      }
+    }
+    return false;
+  }
+  function createSerializableStateInvariantMiddleware(options) {
+    if (options === void 0) {
+      options = {};
+    }
+    if (false) {
+      return function() {
+        return function(next) {
+          return function(action) {
+            return next(action);
+          };
+        };
+      };
+    }
+    var _options = options, _options$isSerializab = _options.isSerializable, isSerializable = _options$isSerializab === void 0 ? isPlain : _options$isSerializab, getEntries = _options.getEntries, _options$ignoredActio = _options.ignoredActions, ignoredActions = _options$ignoredActio === void 0 ? [] : _options$ignoredActio, _options$ignoredActio2 = _options.ignoredActionPaths, ignoredActionPaths = _options$ignoredActio2 === void 0 ? ["meta.arg"] : _options$ignoredActio2, _options$ignoredPaths = _options.ignoredPaths, ignoredPaths = _options$ignoredPaths === void 0 ? [] : _options$ignoredPaths, _options$warnAfter = _options.warnAfter, warnAfter = _options$warnAfter === void 0 ? 32 : _options$warnAfter;
+    return function(storeAPI) {
+      return function(next) {
+        return function(action) {
+          if (ignoredActions.length && ignoredActions.indexOf(action.type) !== -1) {
+            return next(action);
+          }
+          var measureUtils = getTimeMeasureUtils(warnAfter, "SerializableStateInvariantMiddleware");
+          measureUtils.measureTime(function() {
+            var foundActionNonSerializableValue = findNonSerializableValue(action, [], isSerializable, getEntries, ignoredActionPaths);
+            if (foundActionNonSerializableValue) {
+              var keyPath = foundActionNonSerializableValue.keyPath, value = foundActionNonSerializableValue.value;
+              console.error("A non-serializable value was detected in an action, in the path: `" + keyPath + "`. Value:", value, "\nTake a look at the logic that dispatched this action: ", action, "\n(See https://redux.js.org/faq/actions#why-should-type-be-a-string-or-at-least-serializable-why-should-my-action-types-be-constants)", "\n(To allow non-serializable values see: https://redux-toolkit.js.org/usage/usage-guide#working-with-non-serializable-data)");
+            }
+          });
+          var result = next(action);
+          measureUtils.measureTime(function() {
+            var state2 = storeAPI.getState();
+            var foundStateNonSerializableValue = findNonSerializableValue(state2, [], isSerializable, getEntries, ignoredPaths);
+            if (foundStateNonSerializableValue) {
+              var keyPath = foundStateNonSerializableValue.keyPath, value = foundStateNonSerializableValue.value;
+              console.error("A non-serializable value was detected in the state, in the path: `" + keyPath + "`. Value:", value, "\nTake a look at the reducer(s) handling this action type: " + action.type + ".\n(See https://redux.js.org/faq/organizing-state#can-i-put-functions-promises-or-other-non-serializable-items-in-my-store-state)");
+            }
+          });
+          measureUtils.warnIfExceeded();
+          return result;
+        };
+      };
+    };
+  }
   function isBoolean(x2) {
     return typeof x2 === "boolean";
   }
@@ -5241,7 +5700,7 @@
         middlewareArray.push(es_default.withExtraArgument(thunk2.extraArgument));
       }
     }
-    if (false) {
+    if (true) {
       if (immutableCheck) {
         var immutableOptions = {};
         if (!isBoolean(immutableCheck)) {
@@ -5259,7 +5718,7 @@
     }
     return middlewareArray;
   }
-  var IS_PRODUCTION = true;
+  var IS_PRODUCTION = false;
   function configureStore(options) {
     var curriedGetDefaultMiddleware = curryGetDefaultMiddleware();
     var _ref = options || {}, _ref$reducer = _ref.reducer, reducer2 = _ref$reducer === void 0 ? void 0 : _ref$reducer, _ref$middleware = _ref.middleware, middleware2 = _ref$middleware === void 0 ? curriedGetDefaultMiddleware() : _ref$middleware, _ref$devTools = _ref.devTools, devTools = _ref$devTools === void 0 ? true : _ref$devTools, _ref$preloadedState = _ref.preloadedState, preloadedState = _ref$preloadedState === void 0 ? void 0 : _ref$preloadedState, _ref$enhancers = _ref.enhancers, enhancers = _ref$enhancers === void 0 ? void 0 : _ref$enhancers;
@@ -5323,7 +5782,7 @@
     var defaultCaseReducer;
     var builder = {
       addCase: function addCase(typeOrActionCreator, reducer2) {
-        if (false) {
+        if (true) {
           if (actionMatchers.length > 0) {
             throw new Error("`builder.addCase` should only be called before calling `builder.addMatcher`");
           }
@@ -5339,7 +5798,7 @@
         return builder;
       },
       addMatcher: function addMatcher(matcher, reducer2) {
-        if (false) {
+        if (true) {
           if (defaultCaseReducer) {
             throw new Error("`builder.addMatcher` should only be called before calling `builder.addDefaultCase`");
           }
@@ -5351,7 +5810,7 @@
         return builder;
       },
       addDefaultCase: function addDefaultCase(reducer2) {
-        if (false) {
+        if (true) {
           if (defaultCaseReducer) {
             throw new Error("`builder.addDefaultCase` can only be called once");
           }
@@ -5363,14 +5822,14 @@
     builderCallback(builder);
     return [actionsMap, actionMatchers, defaultCaseReducer];
   }
-  function createReducer(initialState2, mapOrBuilderCallback, actionMatchers, defaultCaseReducer) {
+  function createReducer(initialState, mapOrBuilderCallback, actionMatchers, defaultCaseReducer) {
     if (actionMatchers === void 0) {
       actionMatchers = [];
     }
     var _ref = typeof mapOrBuilderCallback === "function" ? executeReducerBuilderCallback(mapOrBuilderCallback) : [mapOrBuilderCallback, actionMatchers, defaultCaseReducer], actionsMap = _ref[0], finalActionMatchers = _ref[1], finalDefaultCaseReducer = _ref[2];
     return function(state2, action) {
       if (state2 === void 0) {
-        state2 = initialState2;
+        state2 = initialState;
       }
       var caseReducers = [actionsMap[action.type]].concat(finalActionMatchers.filter(function(_ref2) {
         var matcher = _ref2.matcher;
@@ -5416,7 +5875,7 @@
     return slice2 + "/" + actionKey;
   }
   function createSlice(options) {
-    var name = options.name, initialState2 = options.initialState;
+    var name = options.name, initialState = options.initialState;
     if (!name) {
       throw new Error("`name` is a required option for createSlice");
     }
@@ -5442,7 +5901,7 @@
       actionCreators[reducerName] = prepareCallback ? createAction(type, prepareCallback) : createAction(type);
     });
     var finalCaseReducers = _extends2({}, extraReducers, {}, sliceCaseReducersByType);
-    var reducer2 = createReducer(initialState2, finalCaseReducers, actionMatchers, defaultCaseReducer);
+    var reducer2 = createReducer(initialState, finalCaseReducers, actionMatchers, defaultCaseReducer);
     return {
       name,
       reducer: reducer2,
@@ -5455,42 +5914,55 @@
   T();
 
   // store/stackReducer.ts
-  var StackNames;
-  (function(StackNames3) {
-    StackNames3["stack1"] = "stack1";
-    StackNames3["stack2"] = "stack2";
-    StackNames3["stack3"] = "stack3";
-    StackNames3["stack4"] = "stack4";
-  })(StackNames || (StackNames = {}));
-  var initialState = {
-    [StackNames.stack1]: [],
-    [StackNames.stack2]: [],
-    [StackNames.stack3]: [],
-    [StackNames.stack4]: []
-  };
-  var createStacksSlice = createSlice({
-    name: "stacks",
-    initialState,
+  var createStacksSlice = (name) => createSlice({
+    name,
+    initialState: [],
     reducers: {
       add(state2, action) {
-        state2[action.payload.stack].push({value: action.payload.value});
+        state2.push({...action.payload});
       },
       delete(state2, action) {
-        const index = state2[action.payload.stack].findIndex((item) => item.value === action.payload.value);
+        const index = state2.findIndex((item) => item.value === action.payload.value);
         if (index > -1) {
-          state2[action.payload.stack].splice(index, 1);
+          state2.splice(index, 1);
         }
       }
     }
   });
-  var stackActions = createStacksSlice.actions;
-  var stacksReducer = createStacksSlice.reducer;
 
   // store/index.ts
+  var ReducerNames;
+  (function(ReducerNames3) {
+    ReducerNames3["stack1"] = "stack1";
+    ReducerNames3["stack2"] = "stack2";
+    ReducerNames3["stack3"] = "stack3";
+    ReducerNames3["stack4"] = "stack4";
+  })(ReducerNames || (ReducerNames = {}));
+  var ReduceGroups;
+  (function(ReduceGroups2) {
+    ReduceGroups2["group1"] = "group1";
+    ReduceGroups2["group2"] = "group2";
+    ReduceGroups2["group3"] = "group3";
+  })(ReduceGroups || (ReduceGroups = {}));
+  var stackSlice1 = createStacksSlice(ReducerNames.stack1);
+  var stackSlice2 = createStacksSlice(ReducerNames.stack2);
+  var stackSlice3 = createStacksSlice(ReducerNames.stack3);
+  var stackSlice4 = createStacksSlice(ReducerNames.stack4);
   var store = configureStore({
-    reducer: {stacks: stacksReducer},
+    reducer: {
+      [ReducerNames.stack1]: savesReducerWrapper(ReduceGroups.group1, stackSlice1.reducer),
+      [ReducerNames.stack2]: savesReducerWrapper(ReduceGroups.group2, stackSlice2.reducer),
+      [ReducerNames.stack3]: savesReducerWrapper(ReduceGroups.group3, stackSlice3.reducer),
+      [ReducerNames.stack4]: savesReducerWrapper(ReduceGroups.group3, stackSlice4.reducer)
+    },
     enhancers: [applyMiddleware(createSavesMiddleware())]
   });
+  var actions = {
+    [ReducerNames.stack1]: stackSlice1.actions,
+    [ReducerNames.stack2]: stackSlice2.actions,
+    [ReducerNames.stack3]: stackSlice3.actions,
+    [ReducerNames.stack4]: stackSlice4.actions
+  };
 
   // utils/useDispatch.ts
   var useDispatch = () => {
@@ -5509,6 +5981,7 @@
   // components/Button/index.ts
   var styles = {
     btn: {
+      userSelect: "none",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
@@ -5536,12 +6009,17 @@
       alignItems: "center",
       flexDirection: "column",
       justifyContent: "flex-end",
-      width: 110,
+      width: 140,
       height: 300,
-      padding: 5
+      padding: 5,
+      border: "1px solid #eee",
+      borderTop: "none"
     },
     item: {
       margin: 5
+    },
+    name: {
+      padding: 10
     }
   };
   var itemIndex = 0;
@@ -5549,12 +6027,15 @@
     const s2 = useStyles(stackStyles);
     const dispatch = useDispatch();
     const addItem = () => {
-      dispatch(stackActions.add({stack, value: `item-${itemIndex++}`}));
+      dispatch(actions[stack].add({value: `item-${itemIndex++}`}));
     };
     return html2`
         <div class=${s2.stack}>
             ${items.map((item) => StackItem({class: s2.item, stack, item}))}
             ${Button({children: "Add Item", onClick: addItem})}
+            <div class="${s2.name}">
+                Reducer: ${stack}
+            </div>
         </div>
     `;
   });
@@ -5592,7 +6073,7 @@
   var StackItem = Component((props) => {
     const s2 = useStyles(stackItemStyles);
     const dis = useDispatch();
-    const onDelete = useCallback(() => dis(stackActions.delete({stack: props.stack, value: props.item.value})));
+    const onDelete = useCallback(() => dis(actions[props.stack].delete({value: props.item.value})));
     const cn2 = `${s2.item} ${props.class}`;
     return html2`
         <div class=${cn2}>
@@ -5622,7 +6103,6 @@
       margin: 5,
       border: "1px solid #eee",
       borderTop: "none",
-      borderBottom: "none",
       "& > *": {
         margin: 5
       }
@@ -5639,9 +6119,12 @@
   var Group = Component((group) => {
     const s2 = useStyles(styles2);
     const dispatch = useDispatch();
-    const onsave = () => dispatch(createAddSaveAction({groupKeys: [group.name], saveKey: `my-save-${saveIndex++}`}));
-    const onloadprev = () => dispatch(createLoadPrevSaveAction());
-    const onnextsave = () => dispatch(createLoadNextSaveAction());
+    const onsave = () => dispatch(createAddSaveAction({
+      groupKeys: [group.name],
+      saveKey: `my-save-${saveIndex++}`
+    }));
+    const onloadprev = () => dispatch(createLoadPrevSaveAction({groupKeys: [group.name]}));
+    const onnextsave = () => dispatch(createLoadNextSaveAction({groupKeys: [group.name]}));
     return html2`
         <div class=${s2.group}>
             <div class=${s2.stacks}>
@@ -5682,12 +6165,10 @@
   };
   var App = Component(() => {
     const s2 = useStyles(styles3);
-    const stacks = useSelector((state2) => {
-      return state2.stacks;
-    });
-    const g1 = createGroupProps("group 1", [StackNames.stack1], stacks);
-    const g2 = createGroupProps("group 2", [StackNames.stack2], stacks);
-    const g3 = createGroupProps("group 3", [StackNames.stack3, StackNames.stack4], stacks);
+    const state2 = useSelector((state3) => state3);
+    const g1 = createGroupProps(ReduceGroups.group1, [ReducerNames.stack1], state2);
+    const g2 = createGroupProps(ReduceGroups.group2, [ReducerNames.stack2], state2);
+    const g3 = createGroupProps(ReduceGroups.group3, [ReducerNames.stack3, ReducerNames.stack4], state2);
     return html2`
         <div class=${s2.app}>
             ${Group(g1)}
@@ -5696,13 +6177,13 @@
         </div>
     `;
   });
-  function createGroupProps(groupName, stackNames, stacks) {
+  function createGroupProps(groupName, reducerNames, state2) {
     return {
       name: groupName,
-      stacks: stackNames.map((stackName) => {
+      stacks: reducerNames.map((reducerName) => {
         return {
-          name: stackName,
-          items: stacks[stackName]
+          name: reducerName,
+          items: state2[reducerName]
         };
       })
     };

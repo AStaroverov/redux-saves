@@ -47,7 +47,7 @@ export type TValuableSaveActions =
 type TArgGroupKey = string | number | symbol;
 type TArgGroupSaveKey = string | number | symbol;
 
-export enum ActionType {
+export const enum ActionType {
   SetInitState = '@@REDUX_SAVE@@/SetInitState',
   ClearSaves = '@@REDUX_SAVE@@/ClearSaves',
   AddSave = '@@REDUX_SAVE@@/AddSave',

@@ -26,7 +26,7 @@ type TState = {
   [R3]?: { n: number },
 }
 
-enum ActionType {
+const enum ActionType {
   Increase = 'Increase',
   Collect = 'Collect',
   Change = 'Change',
