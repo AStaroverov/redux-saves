@@ -1,11 +1,10 @@
 import { Action } from "redux";
 import { createGroupSaveKey } from "./helpers";
-import { TOpaque } from "./types";
 
 export const EMPTY_OBJECT = Object.freeze({});
 
-export type TGroupKey = TOpaque<'GroupKey', string | symbol | number>;
-export type TGroupSaveKey = TOpaque<'SaveKey', string | symbol | number>;
+export type TGroupKey = string | number;
+export type TGroupSaveKey = string | number;
 export type TSnapshot = unknown;
 
 export type TGroupSave = {
@@ -20,7 +19,7 @@ export type TSave = {
   snapshot: TSnapshot
 }
 
-export const DEFAULT_GROUP_KEY: TGroupKey = Symbol('DEFAULT_GROUP_KEY') as TGroupKey;
+export const DEFAULT_GROUP_KEY: TGroupKey = '__DEFAULT_GROUP_KEY__' as TGroupKey;
 
 export type TBaseSaveAction<T = ActionType, P = void> = Action<T> & {
   payload: P;
@@ -43,9 +42,6 @@ export type TValuableSaveActions =
   | TLoadSaveAction
   | TLoadPrevSaveAction
   | TLoadNextSaveAction
-
-type TArgGroupKey = string | number | symbol;
-type TArgGroupSaveKey = string | number | symbol;
 
 export const enum ActionType {
   SetInitState = '@@REDUX_SAVE@@/SetInitState',
@@ -87,8 +83,8 @@ export type TAddSaveAction = TBaseSaveAction<ActionType.AddSave, {
 }>;
 export function createAddSaveAction(
   payload?: {
-    groupKeys?: TArgGroupKey[]
-    saveKey?: TArgGroupSaveKey,
+    groupKeys?: TGroupKey[]
+    saveKey?: TGroupSaveKey,
   }
 ): TAddSaveAction {
   return {
@@ -107,9 +103,9 @@ export type TRemoveSavesAction = TBaseSaveAction<ActionType.RemoveSaves, {
 }>;
 export function createRemoveSavesAction(
   payload?: {
-    groupKeys?: TArgGroupKey[],
-    saveKeys?: TArgGroupSaveKey[],
-    exceptSaveKeys?: TArgGroupSaveKey[],
+    groupKeys?: TGroupKey[],
+    saveKeys?: TGroupSaveKey[],
+    exceptSaveKeys?: TGroupSaveKey[],
   }
 ): TRemoveSavesAction {
   return {
@@ -121,7 +117,7 @@ export function createRemoveSavesAction(
 export type TClearSavesAction = TBaseSaveAction<ActionType.ClearSaves, {
   groupKeys?: TGroupKey[] | void
 }>;
-export function createClearSavesAction(payload?: { groupKeys?: TArgGroupKey[] }): TClearSavesAction {
+export function createClearSavesAction(payload?: { groupKeys?: TGroupKey[] }): TClearSavesAction {
   return {
     type: ActionType.ClearSaves,
     payload: payload || EMPTY_OBJECT,
@@ -133,8 +129,8 @@ export type TLoadSaveAction = TBaseSaveAction<ActionType.LoadSave, {
   saveKey: TGroupSaveKey
 }>;
 export function createLoadSaveAction(payload: {
-  groupKeys?: TArgGroupKey[],
-  saveKey: TArgGroupSaveKey
+  groupKeys?: TGroupKey[],
+  saveKey: TGroupSaveKey
 }): TLoadSaveAction {
   return {
     type: ActionType.LoadSave,
@@ -143,7 +139,7 @@ export function createLoadSaveAction(payload: {
 }
 
 export type TLoadPrevSaveAction = TBaseSaveAction<ActionType.LoadPrevSave, { groupKeys?: TGroupKey[] | void, count?: number }>;
-export function createLoadPrevSaveAction(payload?: { groupKeys?: TArgGroupKey[], count?: number }): TLoadPrevSaveAction {
+export function createLoadPrevSaveAction(payload?: { groupKeys?: TGroupKey[], count?: number }): TLoadPrevSaveAction {
   return {
     type: ActionType.LoadPrevSave,
     payload: payload || EMPTY_OBJECT
@@ -151,7 +147,7 @@ export function createLoadPrevSaveAction(payload?: { groupKeys?: TArgGroupKey[],
 }
 
 export type TLoadNextSaveAction = TBaseSaveAction<ActionType.LoadNextSave, { groupKeys?: TGroupKey[] | void, count?: number }>;
-export function createLoadNextSaveAction(payload?: { groupKeys?: TArgGroupKey[], count?: number }): TLoadNextSaveAction {
+export function createLoadNextSaveAction(payload?: { groupKeys?: TGroupKey[], count?: number }): TLoadNextSaveAction {
   return {
     type: ActionType.LoadNextSave,
     payload: payload || EMPTY_OBJECT

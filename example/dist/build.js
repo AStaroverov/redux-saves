@@ -3294,7 +3294,7 @@
   };
   var defaults = {async: false, always: false};
   var getValue = (value, f2) => typeof f2 == "function" ? f2(value) : f2;
-  var useReducer = (reducer2, value, init, options) => {
+  var useReducer = (reducer3, value, init, options) => {
     const i2 = state.i++;
     const {hook, args, stack, length} = state;
     if (i2 === length)
@@ -3307,7 +3307,7 @@
       ref2.$ = fn2 ? init(value) : getValue(void 0, value);
       ref2._ = asy ? updates.get(hook) || updates.set(hook, reraf()) : hookdate;
       ref2.f = (value2) => {
-        const $value = reducer2(ref2.$, value2);
+        const $value = reducer3(ref2.$, value2);
         if (always || ref2.$ !== $value) {
           ref2.$ = $value;
           ref2._(hook, null, ref2.args);
@@ -3949,10 +3949,47 @@
     };
   }
 
-  // ../src/helpers.ts
-  function createGroupSave(groupKey, saveKey, prevSaveKey, nextSaveKey) {
-    return {groupKey, key: saveKey, prevSaveKey, nextSaveKey};
+  // ../src/reducer.ts
+  var setSavesMetadataActionType = "@@REDUX_SAVES@@/setSavesMetadataActionType";
+  function getInitialState() {
+    return {
+      groupSaves: {},
+      currentBranchSaves: {},
+      currentGroupSaves: {}
+    };
   }
+  function createSetSaveMetadataAction(payload) {
+    return {
+      type: setSavesMetadataActionType,
+      payload
+    };
+  }
+  function savesReducer(state2 = getInitialState(), action) {
+    switch (action.type) {
+      case setSavesMetadataActionType: {
+        const {groupSaves, currentBranchSaves, currentGroupSaves} = action.payload;
+        return {
+          ...state2,
+          groupSaves: {
+            ...state2.groupSaves,
+            ...groupSaves
+          },
+          currentBranchSaves: {
+            ...state2.currentBranchSaves,
+            ...currentBranchSaves
+          },
+          currentGroupSaves: {
+            ...state2.currentGroupSaves,
+            ...currentGroupSaves
+          }
+        };
+      }
+      default:
+        return state2;
+    }
+  }
+
+  // ../src/helpers.ts
   var SAVE_PREFIX = "@@REDUX-SAVE@@";
   function isGeneratedSaveKey(key) {
     return typeof key === "string" && key.startsWith(SAVE_PREFIX);
@@ -4012,9 +4049,42 @@
   function clearSaves(store6) {
     store6.clear();
   }
+  function createGroupSave(groupKey, saveKey, prevSaveKey, nextSaveKey) {
+    return {groupKey, key: saveKey, prevSaveKey, nextSaveKey};
+  }
+  function trySetNextSaveKeyForGroupSave(groupKey, saveKey, nextSaveKey) {
+    const groupSave = getGroupSave(groupKey, saveKey);
+    if (groupSave !== void 0) {
+      groupSave.nextSaveKey = nextSaveKey;
+    }
+  }
   var groupSaveStore = new Map();
   function getGroupSave(groupKey, saveKey) {
     return groupSaveStore.get(groupKey).get(saveKey);
+  }
+  function getGroupSaveKeys(groupKey) {
+    return Array.from(groupSaveStore.get(groupKey)?.keys() || []);
+  }
+  function getBranchForSave(groupKey, saveKey) {
+    const branch = [];
+    const groupSave = getGroupSave(groupKey, saveKey);
+    if (groupSave === void 0) {
+      return branch;
+    }
+    branch.push(groupSave.key);
+    if (groupSave.nextSaveKey !== void 0) {
+      groupSavesIterator(groupKey, groupSave.nextSaveKey, (groupSave2) => {
+        branch.push(groupSave2.key);
+        return groupSave2.nextSaveKey;
+      });
+    }
+    if (groupSave.prevSaveKey !== void 0) {
+      groupSavesIterator(groupKey, groupSave.prevSaveKey, (groupSave2) => {
+        branch.unshift(groupSave2.key);
+        return groupSave2.prevSaveKey;
+      });
+    }
+    return branch;
   }
   function addGroupSave(save) {
     if (!groupSaveStore.has(save.groupKey)) {
@@ -4073,7 +4143,7 @@
 
   // ../src/definitions.ts
   var EMPTY_OBJECT = Object.freeze({});
-  var DEFAULT_GROUP_KEY = Symbol("DEFAULT_GROUP_KEY");
+  var DEFAULT_GROUP_KEY = "__DEFAULT_GROUP_KEY__";
   var ActionType;
   (function(ActionType2) {
     ActionType2["SetInitState"] = "@@REDUX_SAVE@@/SetInitState";
@@ -4109,6 +4179,18 @@
       }
     };
   }
+  function createRemoveSavesAction(payload) {
+    return {
+      type: ActionType.RemoveSaves,
+      payload: payload || EMPTY_OBJECT
+    };
+  }
+  function createLoadSaveAction(payload) {
+    return {
+      type: ActionType.LoadSave,
+      payload
+    };
+  }
   function createLoadPrevSaveAction(payload) {
     return {
       type: ActionType.LoadPrevSave,
@@ -4137,18 +4219,18 @@
   // ../src/reducerWrapper.ts
   function savesReducerWrapper(groupKeyOrReducer, optionalReducer) {
     const groupKey = optionalReducer ? groupKeyOrReducer : DEFAULT_GROUP_KEY;
-    const reducer2 = optionalReducer ? optionalReducer : groupKeyOrReducer;
+    const reducer3 = optionalReducer ? optionalReducer : groupKeyOrReducer;
     const saveStore = createSaveStore();
     let currentSave;
     return (reducerState, action) => {
       if (reducerState === void 0 || !isValuableAction(action.type)) {
-        const nextState = reducer2(reducerState, action);
+        const nextState = reducer3(reducerState, action);
         setGroupChangeState(groupKey, getGroupChangeState(groupKey) || (currentSave === void 0 ? true : currentSave.snapshot !== nextState));
         return nextState;
       }
       registerSaveStore(groupKey, saveStore);
       if (action.payload.groupKeys !== void 0 && action.payload.groupKeys.indexOf(groupKey) === -1) {
-        return reducer2(reducerState, action);
+        return reducer3(reducerState, action);
       }
       const storeSize = getSaveStoreSize(saveStore);
       const groupWasChanged = getGroupChangeState(groupKey) === true;
@@ -4236,15 +4318,22 @@
         if (action.type === ActionType.AddSave) {
           groupKeys.forEach((key) => {
             const groupChangeState = getGroupChangeState(key);
+            const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+            const currentGroupSave = currentGroupSaveKey ? getGroupSave(key, currentGroupSaveKey) : void 0;
             if (groupChangeState) {
-              addGroupSave(createGroupSave(key, action.payload.saveKey, getCurrentGroupSaveKey(key)));
+              addGroupSave(createGroupSave(key, action.payload.saveKey, currentGroupSaveKey));
+              if (currentGroupSave !== void 0) {
+                trySetNextSaveKeyForGroupSave(key, currentGroupSave.key, action.payload.saveKey);
+              }
               setCurrentGroupSaveKey(key, action.payload.saveKey);
-            } else {
+            } else if (currentGroupSave !== void 0) {
               const isUserSaveKey = !isGeneratedSaveKey(action.payload.saveKey);
-              const currentGroupSaveKey = getCurrentGroupSaveKey(key);
-              if (isUserSaveKey && currentGroupSaveKey) {
-                const groupSave = getGroupSave(key, currentGroupSaveKey);
-                addGroupSave(createGroupSave(key, action.payload.saveKey, groupSave.prevSaveKey));
+              const prevSaveKey = currentGroupSave.prevSaveKey;
+              if (isUserSaveKey) {
+                addGroupSave(createGroupSave(key, action.payload.saveKey, prevSaveKey));
+                if (prevSaveKey !== void 0) {
+                  trySetNextSaveKeyForGroupSave(key, prevSaveKey, action.payload.saveKey);
+                }
                 setCurrentGroupSaveKey(key, action.payload.saveKey);
               }
             }
@@ -4254,8 +4343,12 @@
           updateGroupAutoSaveKey();
           groupKeys.forEach((key) => {
             if (getGroupChangeState(key) === true) {
+              const currentGroupSaveKey = getCurrentGroupSaveKey(key);
               const saveKey = getGroupAutoSaveKey();
-              addGroupSave(createGroupSave(key, saveKey, getCurrentGroupSaveKey(key)));
+              addGroupSave(createGroupSave(key, saveKey, currentGroupSaveKey));
+              if (currentGroupSaveKey !== void 0) {
+                trySetNextSaveKeyForGroupSave(key, currentGroupSaveKey, saveKey);
+              }
               setCurrentGroupSaveKey(key, saveKey);
             }
           });
@@ -4294,15 +4387,13 @@
         const wasUpdatedGroupsKeys = new Set();
         if (action.type === ActionType.AddSave) {
           groupKeys.forEach((key) => {
-            const currentGroupSaveKey = getCurrentGroupSaveKey(key);
-            if (currentGroupSaveKey === void 0) {
-              setCurrentGroupSaveKey(key, action.payload.saveKey);
-            } else {
-              const wasAddSave = getGroupChangeState(key) === true;
-              if (wasAddSave) {
-                setCurrentGroupSaveKey(key, action.payload.saveKey);
-              }
-            }
+            setGroupChangeState(key, false);
+          });
+        }
+        if (action.type === ActionType.LoadSave) {
+          groupKeys.forEach((key) => {
+            setCurrentGroupSaveKey(key, action.payload.saveKey);
+            setGroupChangeState(key, false);
           });
         }
         if (action.type === ActionType.LoadPrevSave) {
@@ -4324,11 +4415,7 @@
               wasUpdatedGroupsKeys.add(key);
               setCurrentGroupSaveKey(key, groupSave.key);
             }
-          });
-        }
-        if (action.type === ActionType.AddSave || action.type === ActionType.LoadPrevSave) {
-          groupKeys.forEach((groupKey) => {
-            setGroupChangeState(groupKey, false);
+            setGroupChangeState(key, false);
           });
         }
         if (action.type === ActionType.LoadNextSave) {
@@ -4347,6 +4434,15 @@
             }
           });
         }
+        const groupSaves = {};
+        const currentBranchSaves = {};
+        const currentGroupSaves = {};
+        groupKeys.forEach((key) => {
+          groupSaves[key] = getGroupSaveKeys(key);
+          currentGroupSaves[key] = getCurrentGroupSaveKey(key);
+          currentBranchSaves[key] = currentGroupSaves[key] ? getBranchForSave(key, currentGroupSaves[key]) : [];
+        });
+        store6.dispatch(createSetSaveMetadataAction({groupSaves, currentBranchSaves, currentGroupSaves}));
         if (wasUpdatedGroupsKeys.size > 0) {
           if (action.type === ActionType.LoadPrevSave) {
             store6.dispatch(createLoadPrevSaveDoneAction({
@@ -4854,7 +4950,7 @@
     }
     return Object.getPrototypeOf(obj) === proto;
   }
-  function createStore(reducer2, preloadedState, enhancer) {
+  function createStore(reducer3, preloadedState, enhancer) {
     var _ref2;
     if (typeof preloadedState === "function" && typeof enhancer === "function" || typeof enhancer === "function" && typeof arguments[3] === "function") {
       throw new Error("It looks like you are passing several store enhancers to createStore(). This is not supported. Instead, compose them together to a single function.");
@@ -4867,12 +4963,12 @@
       if (typeof enhancer !== "function") {
         throw new Error("Expected the enhancer to be a function.");
       }
-      return enhancer(createStore)(reducer2, preloadedState);
+      return enhancer(createStore)(reducer3, preloadedState);
     }
-    if (typeof reducer2 !== "function") {
+    if (typeof reducer3 !== "function") {
       throw new Error("Expected the reducer to be a function.");
     }
-    var currentReducer = reducer2;
+    var currentReducer = reducer3;
     var currentState = preloadedState;
     var currentListeners = [];
     var nextListeners = currentListeners;
@@ -5014,14 +5110,14 @@
   }
   function assertReducerShape(reducers) {
     Object.keys(reducers).forEach(function(key) {
-      var reducer2 = reducers[key];
-      var initialState = reducer2(void 0, {
+      var reducer3 = reducers[key];
+      var initialState = reducer3(void 0, {
         type: ActionTypes.INIT
       });
       if (typeof initialState === "undefined") {
         throw new Error('Reducer "' + key + `" returned undefined during initialization. If the state passed to the reducer is undefined, you must explicitly return the initial state. The initial state may not be undefined. If you don't want to set a value for this reducer, you can use null instead of undefined.`);
       }
-      if (typeof reducer2(void 0, {
+      if (typeof reducer3(void 0, {
         type: ActionTypes.PROBE_UNKNOWN_ACTION()
       }) === "undefined") {
         throw new Error('Reducer "' + key + '" returned undefined when probed with a random type. ' + ("Don't try to handle " + ActionTypes.INIT + ' or other actions in "redux/*" ') + "namespace. They are considered private. Instead, you must return the current state for any unknown actions, unless it is undefined, in which case you must return the initial state, regardless of the action type. The initial state may not be undefined, but can be null.");
@@ -5070,9 +5166,9 @@
       var nextState = {};
       for (var _i = 0; _i < finalReducerKeys.length; _i++) {
         var _key = finalReducerKeys[_i];
-        var reducer2 = finalReducers[_key];
+        var reducer3 = finalReducers[_key];
         var previousStateForKey = state2[_key];
-        var nextStateForKey = reducer2(previousStateForKey, action);
+        var nextStateForKey = reducer3(previousStateForKey, action);
         if (typeof nextStateForKey === "undefined") {
           var errorMessage = getUndefinedStateErrorMessage(_key, action);
           throw new Error(errorMessage);
@@ -5721,12 +5817,12 @@
   var IS_PRODUCTION = false;
   function configureStore(options) {
     var curriedGetDefaultMiddleware = curryGetDefaultMiddleware();
-    var _ref = options || {}, _ref$reducer = _ref.reducer, reducer2 = _ref$reducer === void 0 ? void 0 : _ref$reducer, _ref$middleware = _ref.middleware, middleware2 = _ref$middleware === void 0 ? curriedGetDefaultMiddleware() : _ref$middleware, _ref$devTools = _ref.devTools, devTools = _ref$devTools === void 0 ? true : _ref$devTools, _ref$preloadedState = _ref.preloadedState, preloadedState = _ref$preloadedState === void 0 ? void 0 : _ref$preloadedState, _ref$enhancers = _ref.enhancers, enhancers = _ref$enhancers === void 0 ? void 0 : _ref$enhancers;
+    var _ref = options || {}, _ref$reducer = _ref.reducer, reducer3 = _ref$reducer === void 0 ? void 0 : _ref$reducer, _ref$middleware = _ref.middleware, middleware2 = _ref$middleware === void 0 ? curriedGetDefaultMiddleware() : _ref$middleware, _ref$devTools = _ref.devTools, devTools = _ref$devTools === void 0 ? true : _ref$devTools, _ref$preloadedState = _ref.preloadedState, preloadedState = _ref$preloadedState === void 0 ? void 0 : _ref$preloadedState, _ref$enhancers = _ref.enhancers, enhancers = _ref$enhancers === void 0 ? void 0 : _ref$enhancers;
     var rootReducer;
-    if (typeof reducer2 === "function") {
-      rootReducer = reducer2;
-    } else if (isPlainObject2(reducer2)) {
-      rootReducer = combineReducers(reducer2);
+    if (typeof reducer3 === "function") {
+      rootReducer = reducer3;
+    } else if (isPlainObject2(reducer3)) {
+      rootReducer = combineReducers(reducer3);
     } else {
       throw new Error('"reducer" is a required argument, and must be a function or an object of functions that can be passed to combineReducers');
     }
@@ -5781,7 +5877,7 @@
     var actionMatchers = [];
     var defaultCaseReducer;
     var builder = {
-      addCase: function addCase(typeOrActionCreator, reducer2) {
+      addCase: function addCase(typeOrActionCreator, reducer3) {
         if (true) {
           if (actionMatchers.length > 0) {
             throw new Error("`builder.addCase` should only be called before calling `builder.addMatcher`");
@@ -5794,10 +5890,10 @@
         if (type in actionsMap) {
           throw new Error("addCase cannot be called with two reducers for the same action type");
         }
-        actionsMap[type] = reducer2;
+        actionsMap[type] = reducer3;
         return builder;
       },
-      addMatcher: function addMatcher(matcher, reducer2) {
+      addMatcher: function addMatcher(matcher, reducer3) {
         if (true) {
           if (defaultCaseReducer) {
             throw new Error("`builder.addMatcher` should only be called before calling `builder.addDefaultCase`");
@@ -5805,17 +5901,17 @@
         }
         actionMatchers.push({
           matcher,
-          reducer: reducer2
+          reducer: reducer3
         });
         return builder;
       },
-      addDefaultCase: function addDefaultCase(reducer2) {
+      addDefaultCase: function addDefaultCase(reducer3) {
         if (true) {
           if (defaultCaseReducer) {
             throw new Error("`builder.addDefaultCase` can only be called once");
           }
         }
-        defaultCaseReducer = reducer2;
+        defaultCaseReducer = reducer3;
         return builder;
       }
     };
@@ -5835,8 +5931,8 @@
         var matcher = _ref2.matcher;
         return matcher(action);
       }).map(function(_ref3) {
-        var reducer2 = _ref3.reducer;
-        return reducer2;
+        var reducer3 = _ref3.reducer;
+        return reducer3;
       }));
       if (caseReducers.filter(function(cr) {
         return !!cr;
@@ -5901,10 +5997,10 @@
       actionCreators[reducerName] = prepareCallback ? createAction(type, prepareCallback) : createAction(type);
     });
     var finalCaseReducers = _extends2({}, extraReducers, {}, sliceCaseReducersByType);
-    var reducer2 = createReducer(initialState, finalCaseReducers, actionMatchers, defaultCaseReducer);
+    var reducer3 = createReducer(initialState, finalCaseReducers, actionMatchers, defaultCaseReducer);
     return {
       name,
-      reducer: reducer2,
+      reducer: reducer3,
       actions: actionCreators,
       caseReducers: sliceCaseReducersByName
     };
@@ -5953,7 +6049,8 @@
       [ReducerNames.stack1]: savesReducerWrapper(ReduceGroups.group1, stackSlice1.reducer),
       [ReducerNames.stack2]: savesReducerWrapper(ReduceGroups.group2, stackSlice2.reducer),
       [ReducerNames.stack3]: savesReducerWrapper(ReduceGroups.group3, stackSlice3.reducer),
-      [ReducerNames.stack4]: savesReducerWrapper(ReduceGroups.group3, stackSlice4.reducer)
+      [ReducerNames.stack4]: savesReducerWrapper(ReduceGroups.group3, stackSlice4.reducer),
+      saves: savesReducer
     },
     enhancers: [applyMiddleware(createSavesMiddleware())]
   });
@@ -5996,7 +6093,7 @@
     const onclick = props.onClick ? useCallback(props.onClick) : void 0;
     const className = `${s2.btn} ${props.class}`;
     return html2`
-        <div class="${className}" onclick=${onclick}>
+        <div class="${className}" title=${props.title || ""} onclick=${onclick}>
             ${props.children}
         </div>
     `;
@@ -6006,10 +6103,10 @@
   var stackStyles = {
     stack: {
       display: "flex",
+      flexGrow: 1,
       alignItems: "center",
       flexDirection: "column",
       justifyContent: "flex-end",
-      width: 140,
       height: 300,
       padding: 5,
       border: "1px solid #eee",
@@ -6041,9 +6138,9 @@
   });
   var stackItemStyles = {
     item: {
+      boxSizing: "border-box",
       position: "relative",
-      width: 100,
-      height: 20,
+      width: "100%",
       padding: 5,
       borderRadius: 4,
       border: "1px solid",
@@ -6057,7 +6154,6 @@
       position: "absolute",
       top: 0,
       right: 0,
-      height: 20,
       opacity: 0
     },
     operation: {
@@ -6085,11 +6181,128 @@
     `;
   });
 
+  // components/Saves.ts
+  var saveStyles = {
+    saves: {
+      display: "flex",
+      alignItems: "center",
+      flexDirection: "column",
+      flexGrow: 1,
+      height: 300,
+      padding: 5,
+      margin: 5,
+      border: "1px solid #eee",
+      borderBottom: "none"
+    },
+    row: {
+      display: "flex"
+    },
+    col: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: 5,
+      margin: 5,
+      border: "1px solid #eee",
+      borderBottom: "none"
+    },
+    save: {
+      margin: 5
+    },
+    name: {
+      padding: 10
+    }
+  };
+  var Saves = Component((props) => {
+    const s2 = useStyles(saveStyles);
+    const {group, currentSave, saves, branchSaves} = props;
+    const shouldRender = Array.isArray(saves) && Array.isArray(branchSaves);
+    return shouldRender ? html2`
+        <div class=${s2.saves}>
+            <div class=${`${s2.row} ${s2.name}`}>
+                Current save: ${currentSave ? Save({group, save: currentSave}) : "-"}
+            </div>
+            <div class=${s2.row}>
+                <div class=${s2.col}>
+                    <div class=${s2.name}>All saves</div>
+                    ${saves.map((save) => Save({class: s2.save, group, save}))}
+                </div>
+                <div class=${s2.col}>
+                    <div class=${s2.name}>Branch saves</div>
+                    ${branchSaves.map((save) => Save({class: s2.save, group, save}))}
+                </div>
+            </div>
+        </div>
+    ` : null;
+  });
+  var saveItemStyles = {
+    item: {
+      boxSizing: "border-box",
+      position: "relative",
+      width: "100%",
+      padding: 5,
+      borderRadius: 4,
+      border: "1px solid",
+      "&:hover $actions": {
+        pointerEvents: "auto",
+        opacity: 1
+      }
+    },
+    actions: {
+      pointerEvents: "none",
+      position: "absolute",
+      top: 0,
+      right: 0,
+      display: "flex",
+      opacity: 0
+    },
+    action: {
+      width: 30,
+      height: 30,
+      padding: 0,
+      marginRight: 2
+    }
+  };
+  var Save = Component((props) => {
+    const s2 = useStyles(saveItemStyles);
+    const dis = useDispatch();
+    const onLoad = props.save ? useCallback(() => dis(createLoadSaveAction({groupKeys: [props.group], saveKey: props.save}))) : noop;
+    const onRemove = props.save ? useCallback(() => dis(createRemoveSavesAction({groupKeys: [props.group], saveKeys: [props.save]}))) : noop;
+    const cn2 = `${s2.item} ${props.class || ""}`;
+    return props.save ? html2`
+            <div class=${cn2}>
+                ${String(props.save).replace("@@REDUX-SAVE@@/", "")}
+                <div class=${s2.actions}>
+                    ${Button({children: "\u2913", title: "set", class: s2.action, onClick: onLoad})}
+                    ${Button({children: "\u2716", title: "remove", class: s2.action, onClick: onRemove})}
+                </div>
+            </div>
+          ` : null;
+  });
+  var noop = () => {
+  };
+
+  // utils/useSelector.ts
+  var useSelector = (selector) => {
+    const [value, setValue] = useState(selector(store.getState()));
+    useEffect(() => {
+      function callback() {
+        const newValue = selector(store.getState());
+        if (newValue !== value) {
+          setValue(newValue);
+        }
+      }
+      return store.subscribe(callback);
+    }, [store]);
+    return value;
+  };
+
   // components/Group/index.ts
   var styles2 = {
     group: {
       display: "flex",
-      flexDirection: "column"
+      flexDirection: "column",
+      width: 300
     },
     name: {
       display: "flex",
@@ -6125,6 +6338,9 @@
     }));
     const onloadprev = () => dispatch(createLoadPrevSaveAction({groupKeys: [group.name]}));
     const onnextsave = () => dispatch(createLoadNextSaveAction({groupKeys: [group.name]}));
+    const reduxSavesState = useSelector((state2) => {
+      return state2.saves;
+    });
     return html2`
         <div class=${s2.group}>
             <div class=${s2.stacks}>
@@ -6138,24 +6354,17 @@
                 ${Button({class: s2.btn, children: "Load Prev Save", onClick: onloadprev})}
                 ${Button({class: s2.btn, children: "Load Next Save", onClick: onnextsave})}
             </div>
+            <div>
+                ${Saves({
+      group: group.name,
+      saves: reduxSavesState.groupSaves[group.name],
+      branchSaves: reduxSavesState.currentBranchSaves[group.name],
+      currentSave: reduxSavesState.currentGroupSaves[group.name]
+    })}
+            </div>
         </div>
     `;
   });
-
-  // utils/useSelector.ts
-  var useSelector = (selector) => {
-    const [value, setValue] = useState(selector(store.getState()));
-    useEffect(() => {
-      function callback() {
-        const newValue = selector(store.getState());
-        if (newValue !== value) {
-          setValue(newValue);
-        }
-      }
-      return store.subscribe(callback);
-    }, [store]);
-    return value;
-  };
 
   // components/App/index.ts
   var styles3 = {

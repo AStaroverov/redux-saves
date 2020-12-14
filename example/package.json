@@ -7,7 +7,7 @@
   "scripts": {
     "server": "python3 -m http.server",
     "build": "../node_modules/.bin/esbuild index.ts --bundle --outfile=./dist/build.js '--define:process.env.NODE_ENV=\"development\"'",
-    "watch": "yarn server & nodemon -e ts --watch ./ --ignore dist/ --exec yarn build"
+    "watch": "yarn server & nodemon -e ts --watch ./ --watch ../src --ignore dist/ --exec yarn build"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.5.0",

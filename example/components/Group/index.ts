@@ -5,6 +5,8 @@ import { useDispatch } from '../../utils/useDispatch';
 import { useStyles } from '../../utils/useStyles';
 import { Button } from '../Button';
 import { ReducerNames } from '../../store';
+import { Saves } from '../Saves';
+import { useSelector } from '../../utils/useSelector';
 
 export type TGroup = {
     name: string,
@@ -18,6 +20,7 @@ const styles = {
     group: {
         display: 'flex',
         flexDirection: 'column',
+        width: 300,
     },
     name: {
         display: 'flex',
@@ -57,6 +60,9 @@ export const Group = Component((group: TGroup) => {
     );
     const onloadprev = () => dispatch(createLoadPrevSaveAction({ groupKeys: [group.name] }));
     const onnextsave = () => dispatch(createLoadNextSaveAction({ groupKeys: [group.name] }));
+    const reduxSavesState = useSelector((state) => {
+        return state.saves;
+    });
 
     return html`
         <div class=${s.group}>
@@ -70,6 +76,14 @@ export const Group = Component((group: TGroup) => {
                 ${Button({ class: s.btn, children: 'Add Save', onClick: onsave })}
                 ${Button({ class: s.btn, children: 'Load Prev Save', onClick: onloadprev })}
                 ${Button({ class: s.btn, children: 'Load Next Save', onClick: onnextsave })}
+            </div>
+            <div>
+                ${Saves({
+                    group: group.name,
+                    saves: reduxSavesState.groupSaves[group.name],
+                    branchSaves: reduxSavesState.currentBranchSaves[group.name],
+                    currentSave: reduxSavesState.currentGroupSaves[group.name],
+                })}
             </div>
         </div>
     `;

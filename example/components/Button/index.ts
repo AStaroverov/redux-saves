@@ -16,6 +16,7 @@ const styles = {
 
 export const Button = Component((props: {
     class?: string,
+    title?: string,
     children?: any,
     onClick?: VoidFunction
 }) => {
@@ -24,7 +25,7 @@ export const Button = Component((props: {
     const className = `${s.btn} ${props.class}`;
 
     return html`
-        <div class="${className}" onclick=${onclick}>
+        <div class="${className}" title=${props.title || ''} onclick=${onclick}>
             ${props.children}
         </div>
     `;

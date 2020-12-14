@@ -1,5 +1,6 @@
 import { applyMiddleware, configureStore } from "@reduxjs/toolkit";
-import { createSavesMiddleware, savesReducerWrapper } from "../../src";
+import { createSavesMiddleware, savesReducer, savesReducerWrapper } from "../../src";
+import { TSavesState } from "../../src/reducer";
 import { createStacksSlice, TStackState } from "./stackReducer";
 
 export const enum ReducerNames {
@@ -18,6 +19,7 @@ export type TState = {
     [ReducerNames.stack2]: TStackState,
     [ReducerNames.stack3]: TStackState,
     [ReducerNames.stack4]: TStackState,
+    saves: TSavesState,
 };
 
 const stackSlice1 = createStacksSlice(ReducerNames.stack1);
@@ -31,6 +33,7 @@ export const store = configureStore<TState>({
         [ReducerNames.stack2]: savesReducerWrapper(ReduceGroups.group2, stackSlice2.reducer),
         [ReducerNames.stack3]: savesReducerWrapper(ReduceGroups.group3, stackSlice3.reducer),
         [ReducerNames.stack4]: savesReducerWrapper(ReduceGroups.group3, stackSlice4.reducer),
+        saves: savesReducer,
     },
     enhancers: [applyMiddleware(createSavesMiddleware())],
 });

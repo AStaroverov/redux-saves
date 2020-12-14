@@ -2,7 +2,7 @@ Arguments:
   /home/astaroverov/.nvm/versions/node/v12.13.1/bin/node /c/Program Files (x86)/Yarn/bin/yarn.js build
 
 PATH: 
-  /home/astaroverov/Projects/redux-saves/example/node_modules/.bin:/tmp/yarn--1607435360389-0.594658922326553:/home/astaroverov/Projects/redux-saves/example/node_modules/.bin:/home/astaroverov/.config/yarn/link/node_modules/.bin:/home/astaroverov/.yarn/bin:/home/astaroverov/.nvm/versions/node/v12.13.1/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.nvm/versions/node/v12.13.1/lib/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.nvm/versions/node/v12.13.1/bin/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.vscode-server/bin/e5a624b788d92b8d34d1392e4c4d9789406efe8f/bin:/home/astaroverov/.nvm/versions/node/v12.13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/c/WINDOWS/System32/OpenSSH/:/c/Users/Alexandr/AppData/Roaming/nvm:/c/Program Files/nodejs:/c/Program Files (x86)/Yarn/bin/:/c/Program Files/Git/cmd:/c/Users/Alexandr/AppData/Local/Microsoft/WindowsApps:/c/Users/Alexandr/AppData/Local/Programs/Microsoft VS Code/bin:/c/Users/Alexandr/AppData/Roaming/nvm:/c/Program Files/nodejs:/c/Users/Alexandr/AppData/Local/Yarn/bin:/c/Program Files/JetBrains/WebStorm 2020.3/bin:/snap/bin
+  /home/astaroverov/Projects/redux-saves/example/node_modules/.bin:/tmp/yarn--1607537493044-0.6335458867347796:/home/astaroverov/Projects/redux-saves/example/node_modules/.bin:/home/astaroverov/.config/yarn/link/node_modules/.bin:/home/astaroverov/.yarn/bin:/home/astaroverov/.nvm/versions/node/v12.13.1/libexec/lib/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.nvm/versions/node/v12.13.1/lib/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.nvm/versions/node/v12.13.1/bin/node_modules/npm/bin/node-gyp-bin:/home/astaroverov/.vscode-server/bin/e5a624b788d92b8d34d1392e4c4d9789406efe8f/bin:/home/astaroverov/.nvm/versions/node/v12.13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/c/WINDOWS/system32:/c/WINDOWS:/c/WINDOWS/System32/Wbem:/c/WINDOWS/System32/WindowsPowerShell/v1.0/:/c/WINDOWS/System32/OpenSSH/:/c/Users/Alexandr/AppData/Roaming/nvm:/c/Program Files/nodejs:/c/Program Files (x86)/Yarn/bin/:/c/Program Files/Git/cmd:/c/Users/Alexandr/AppData/Local/Microsoft/WindowsApps:/c/Users/Alexandr/AppData/Local/Programs/Microsoft VS Code/bin:/c/Users/Alexandr/AppData/Roaming/nvm:/c/Program Files/nodejs:/c/Users/Alexandr/AppData/Local/Yarn/bin:/c/Program Files/JetBrains/WebStorm 2020.3/bin:/snap/bin
 
 Yarn version: 
   1.21.1
@@ -36,7 +36,7 @@ npm manifest:
     "scripts": {
       "server": "python3 -m http.server",
       "build": "../node_modules/.bin/esbuild index.ts --bundle --outfile=./dist/build.js '--define:process.env.NODE_ENV=\"development\"'",
-      "watch": "yarn server & nodemon -e ts --watch ./ --ignore dist/ --exec yarn build"
+      "watch": "yarn server & nodemon -e ts --watch ./ --watch ../src --ignore dist/ --exec yarn build"
     },
     "dependencies": {
       "@reduxjs/toolkit": "^1.5.0",

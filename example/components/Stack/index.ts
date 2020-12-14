@@ -11,10 +11,10 @@ export type TStackItem = {
 const stackStyles = {
     stack: {
         display: 'flex',
+        flexGrow: 1,
         alignItems: 'center',
         flexDirection: 'column',
         justifyContent: 'flex-end',
-        width: 140,
         height: 300,
         padding: 5,
         border: '1px solid #eee',
@@ -48,9 +48,9 @@ export const Stack = Component((stack: ReducerNames, items: TStackItem[]) => {
 
 const stackItemStyles = {
     item: {
+        boxSizing: 'border-box',
         position: 'relative',
-        width: 100,
-        height: 20,
+        width: '100%',
         padding: 5,
         borderRadius: 4,
         border: '1px solid',
@@ -66,7 +66,6 @@ const stackItemStyles = {
         position: 'absolute',
         top: 0,
         right: 0,
-        height: 20,
         opacity: 0,
     },
 
