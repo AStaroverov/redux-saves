@@ -1,6 +1,12 @@
 # redux-saves
 Undo/Redo on steroids 💊 for real applications.
 
+## Will be useful for
+* Undo/Redo
+* Optimistic UI
+* Transactions
+* Jumping between states inside application
+
 ### ([DEMO]())
 
 ### Install
