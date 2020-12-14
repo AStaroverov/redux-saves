@@ -1,17 +1,20 @@
 import { Action } from 'redux';
+import { TGroupKey, TGroupSaveKey } from './definitions';
 
 export const setSavesMetadataActionType: '@@REDUX_SAVES@@/setSavesMetadataActionType'
   = '@@REDUX_SAVES@@/setSavesMetadataActionType';
 
 export type TSavesState = {
-  countSaves: number;
-  currentSaveIndex: number;
+  groupSaves: Record<TGroupKey, TGroupSaveKey[] | void>;
+  currentBranchSaves: Record<TGroupKey, TGroupSaveKey[] | void>;
+  currentGroupSaves: Record<TGroupKey, TGroupSaveKey | void>;
 };
 
 export function getInitialState(): TSavesState {
   return {
-    countSaves: 0,
-    currentSaveIndex: 0,
+    groupSaves: {},
+    currentBranchSaves: {},
+    currentGroupSaves: {},
   };
 }
 
@@ -29,9 +32,24 @@ export function savesReducer(
 ): TSavesState {
   switch (action.type) {
     case setSavesMetadataActionType: {
+      const { groupSaves, currentBranchSaves, currentGroupSaves } =
+        (action as TSetSavesMetadataAction).payload;
+
+
       return {
         ...state,
-        ...(action as TSetSavesMetadataAction).payload,
+        groupSaves: {
+          ...state.groupSaves,
+          ...groupSaves
+        },
+        currentBranchSaves: {
+          ...state.currentBranchSaves,
+          ...currentBranchSaves
+        },
+        currentGroupSaves: {
+          ...state.currentGroupSaves,
+          ...currentGroupSaves
+        },
       }
     }
 

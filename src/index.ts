@@ -1,4 +1,4 @@
-import { savesReducer } from "./reducer";
+import { savesReducer, TSavesState } from "./reducer";
 import { savesReducerWrapper } from "./reducerWrapper";
 import { createSavesMiddleware } from "./middleware";
 import {
@@ -12,6 +12,7 @@ import {
 } from "./definitions";
 
 export {
+  TSavesState,
   SavesActionType,
   createSavesMiddleware,
   savesReducerWrapper,

@@ -25,7 +25,10 @@ import {
   groupSaveStore,
   deleteGroupSaveSafety,
   isGeneratedSaveKey,
-  getGroupSave
+  getGroupSave,
+  getGroupSaveKeys,
+  getBranchForSave,
+  trySetNextSaveKeyForGroupSave
 } from "./helpers";
 import { createSetSaveMetadataAction } from "./reducer";
 
@@ -47,32 +50,45 @@ export function createSavesMiddleware(): Middleware {
       if (action.type === ActionType.AddSave) {
         groupKeys.forEach((key) => {
           const groupChangeState = getGroupChangeState(key);
+          const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+          const currentGroupSave = currentGroupSaveKey
+            ? getGroupSave(key, currentGroupSaveKey)
+            : undefined;
 
           if (groupChangeState) {
             addGroupSave(
               createGroupSave(
                 key,
                 action.payload.saveKey,
-                getCurrentGroupSaveKey(key),
+                currentGroupSaveKey,
               )
             );
 
-            setCurrentGroupSaveKey(key, action.payload.saveKey);
-          } else {
-            const isUserSaveKey = !isGeneratedSaveKey(action.payload.saveKey);
-            const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+            if (currentGroupSave !== undefined) {
+              trySetNextSaveKeyForGroupSave(key, currentGroupSave.key, action.payload.saveKey);
+            }
 
-            // Cant be situation then groupChangeState === false and we try make duplicate save
-            if (isUserSaveKey && currentGroupSaveKey) {
-              const groupSave = getGroupSave(key, currentGroupSaveKey);
-              
+            setCurrentGroupSaveKey(key, action.payload.saveKey);
+          } else
+            // for duplicate save this condition always will be true
+            if (currentGroupSave !== undefined) {
+            
+            // try create duplicate state
+            const isUserSaveKey = !isGeneratedSaveKey(action.payload.saveKey);
+            const prevSaveKey = currentGroupSave.prevSaveKey;
+
+            if (isUserSaveKey) {
               addGroupSave(
                 createGroupSave(
                   key,
                   action.payload.saveKey,
-                  groupSave.prevSaveKey,
+                  prevSaveKey,
                 )
               );
+              
+              if (prevSaveKey !== undefined) {
+                trySetNextSaveKeyForGroupSave(key, prevSaveKey, action.payload.saveKey);
+              }
 
               setCurrentGroupSaveKey(key, action.payload.saveKey);
             }
@@ -88,15 +104,21 @@ export function createSavesMiddleware(): Middleware {
 
         groupKeys.forEach((key) => {
           if (getGroupChangeState(key) === true) {
+            const currentGroupSaveKey = getCurrentGroupSaveKey(key);
             const saveKey = getGroupAutoSaveKey();
             
             addGroupSave(
               createGroupSave(
                 key,
                 saveKey,
-                getCurrentGroupSaveKey(key),
+                currentGroupSaveKey,
               )
             );
+
+            if (currentGroupSaveKey !== undefined) {
+              trySetNextSaveKeyForGroupSave(key, currentGroupSaveKey, saveKey);
+            }
+
             setCurrentGroupSaveKey(key, saveKey);
           }
         });
@@ -143,23 +165,18 @@ export function createSavesMiddleware(): Middleware {
         });
       }
 
-      // trigger HistoryWentBack/HistoryWentForward
-      // if HistoryGoBack/HistoryGoForward were successful
       const wasUpdatedGroupsKeys = new Set<TGroupKey>();
 
       if (action.type === ActionType.AddSave) {
         groupKeys.forEach((key) => {
-          const currentGroupSaveKey = getCurrentGroupSaveKey(key);
+          setGroupChangeState(key, false);
+        });
+      }
 
-          if (currentGroupSaveKey === undefined) {
-            setCurrentGroupSaveKey(key, action.payload.saveKey);
-          } else {
-            const wasAddSave = getGroupChangeState(key) === true;
-           
-            if (wasAddSave) {
-              setCurrentGroupSaveKey(key, action.payload.saveKey);
-            }
-          }
+      if (action.type === ActionType.LoadSave) {
+        groupKeys.forEach((key) => {
+          setCurrentGroupSaveKey(key, action.payload.saveKey);
+          setGroupChangeState(key, false);
         });
       }
 
@@ -192,15 +209,7 @@ export function createSavesMiddleware(): Middleware {
             wasUpdatedGroupsKeys.add(key);
             setCurrentGroupSaveKey(key, groupSave.key);
           }
-        });
-      }
-
-      if (
-        action.type === ActionType.AddSave
-        || action.type === ActionType.LoadPrevSave
-      ) {
-        groupKeys.forEach((groupKey) => {
-          setGroupChangeState(groupKey, false);
+          setGroupChangeState(key, false);
         });
       }
 
@@ -228,13 +237,21 @@ export function createSavesMiddleware(): Middleware {
         });
       }
 
-      // update public metadata for application
-      // store.dispatch(
-      //   createSetSaveMetadataAction({
-      //     countSaves: groupsMaxCountSaves,
-      //     currentSaveIndex: nextSaveIndex,
-      //   })
-      // );
+      const groupSaves: Record<TGroupKey, TGroupSaveKey[]> = {};
+      const currentBranchSaves: Record<TGroupKey, TGroupSaveKey[]> = {};
+      const currentGroupSaves: Record<TGroupKey, TGroupSaveKey | void> = {};
+
+      groupKeys.forEach((key) => {
+        groupSaves[key] = getGroupSaveKeys(key);
+        currentGroupSaves[key] = getCurrentGroupSaveKey(key);
+        currentBranchSaves[key] = currentGroupSaves[key]
+          ? getBranchForSave(key, currentGroupSaves[key] as TGroupSaveKey)
+          : [];
+      });
+
+      store.dispatch(
+        createSetSaveMetadataAction({ groupSaves, currentBranchSaves, currentGroupSaves })
+      );
 
       if (wasUpdatedGroupsKeys.size > 0) {
         if (action.type === ActionType.LoadPrevSave) {

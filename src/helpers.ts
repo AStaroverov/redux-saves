@@ -1,14 +1,5 @@
 import { TGroupKey, TGroupSave, TGroupSaveKey, TSave, TSnapshot } from "./definitions";
 
-export function createGroupSave(
-  groupKey: TGroupKey,
-  saveKey: TGroupSaveKey,
-  prevSaveKey?: TGroupSaveKey | void,
-  nextSaveKey?: TGroupSaveKey | void,
-): TGroupSave { 
-  return { groupKey, key: saveKey, prevSaveKey, nextSaveKey };
-}
-
 // saves prefix
 const SAVE_PREFIX = '@@REDUX-SAVE@@';
 
@@ -108,6 +99,29 @@ export function clearSaves(store: TSaveStore): void {
   store.clear();
 }
 
+// Group Saves
+export function createGroupSave(
+  groupKey: TGroupKey,
+  saveKey: TGroupSaveKey,
+  prevSaveKey?: TGroupSaveKey | void,
+  nextSaveKey?: TGroupSaveKey | void,
+): TGroupSave { 
+  return { groupKey, key: saveKey, prevSaveKey, nextSaveKey };
+}
+
+export function trySetNextSaveKeyForGroupSave(
+  groupKey: TGroupKey,
+  saveKey: TGroupSaveKey,
+  nextSaveKey: TGroupSaveKey
+): void {
+  const groupSave =
+    getGroupSave(groupKey, saveKey);
+
+  if (groupSave !== undefined) {
+    groupSave.nextSaveKey = nextSaveKey;
+  }
+}
+
 // Group Saves Store
 export const groupSaveStore = new Map<TGroupKey, Map<TGroupSaveKey, TGroupSave>>()
 
@@ -115,6 +129,44 @@ export function getGroupSaveStoreSize (): number { return groupSaveStore.size; }
 
 export function getGroupSave(groupKey: TGroupKey, saveKey: TGroupSaveKey): TGroupSave {
   return groupSaveStore.get(groupKey)!.get(saveKey)!;
+}
+
+export function getGroupSaveKeys(groupKey: TGroupKey): TGroupSaveKey[] {
+  return Array.from(groupSaveStore.get(groupKey)?.keys() || []);
+}
+
+export function getBranchForSave(groupKey: TGroupKey, saveKey: TGroupSaveKey): TGroupSaveKey[] {
+  const branch: TGroupSaveKey[] = [];
+  const groupSave = getGroupSave(groupKey, saveKey);
+
+  if (groupSave === undefined) {
+    return branch;
+  }
+
+  branch.push(groupSave.key);
+
+  if (groupSave.nextSaveKey !== undefined) {
+    groupSavesIterator(
+      groupKey,
+      groupSave.nextSaveKey,
+      (groupSave) => {
+        branch.push(groupSave.key);
+        return groupSave.nextSaveKey;
+      }
+    );
+  }
+  if (groupSave.prevSaveKey !== undefined) {
+    groupSavesIterator(
+      groupKey,
+      groupSave.prevSaveKey,
+      (groupSave) => {
+        branch.unshift(groupSave.key);
+        return groupSave.prevSaveKey;
+      }
+    );
+  }
+
+  return branch;
 }
 
 export function addGroupSave(save: TGroupSave): void {
