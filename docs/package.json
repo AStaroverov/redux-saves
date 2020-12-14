@@ -1,7 +1,7 @@
 {
   "name": "example",
   "version": "1.0.0",
-  "description": "separate package.json for example",
+  "description": "",
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
