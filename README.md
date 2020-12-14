@@ -182,3 +182,4 @@ type SavesReducerState = {
 }
 ```
 
+When you load some previous save and begin change state you are creating a new branch of saves, that will be used for load previous and next saves.
