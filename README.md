@@ -14,7 +14,7 @@ yarn add redux-saves
 ### Usage
 
 ##### Add middleware 
-```
+```typescript
 import { createStore, applyMiddleware } from 'redux'
 import { createSavesMiddleware } from 'redux-saves';
 
@@ -26,7 +26,7 @@ export const store = createStore(
 
 ##### Wrap Reducers
 Wrap each reducer that you want control with redux-saves
-```
+```typescript
 import { savesReducerWrapper } from 'redux-saves';
 
 export const reducer = savesReducerWrapper((state, action) => {
@@ -38,7 +38,7 @@ export const reducer = savesReducerWrapper((state, action) => {
 });
 ```
 Also you can pin reducer to some group for joint control
-```
+```typescript
 import { savesReducerWrapper } from 'redux-saves';
 
 export const reducer = savesReducerWrapper('Group 1', (state, action) => {
@@ -50,11 +50,12 @@ export const reducer = savesReducerWrapper('Group 1', (state, action) => {
 });
 ```
 
-> NOTICE: Group key can be number or string;
-> NOTICE: If Group key don't specified, reducer will be added to default group;
+> Group key can be number or string;
+
+> If Group key don't specified, reducer will be added to default group;
 
 ##### Add Reducer with meta information from redux-saves (optional step)
-```
+```typescript
 import { createStore, applyMiddleware } from 'redux'
 import { createSavesMiddleware } from 'redux-saves';
 
@@ -69,10 +70,10 @@ export const store = createStore(
 
 ```
 
-##### Actions
+#### Actions
 
-###### Add Save
-```
+##### Add Save
+```typescript
 store.dispatch(createAddSaveAction());
 // or
 type Payload = {
@@ -83,19 +84,21 @@ type Payload = {
 store.dispatch(createAddSaveAction(payload as Payload));
 ```
 If payload === undefined || groupKeys === undefined
-    groupKeys will equal for all existed groups
+
+&nbsp;&nbsp;groupKeys will equal for all existed groups
 
 If payload === undefined || saveKey === undefined
-    saveKey will generated automatically
+
+&nbsp;&nbsp;saveKey will generated automatically
 
 
-###### Clear saves
+##### Clear saves
 ```
 store.dispatch(createClearSavesAction());
 ```
 
-###### Remove saves
-```
+##### Remove saves
+```typescript
 type Payload = {
     groupKeys?: TGroupKey[],
     saveKeys?: TGroupSaveKey[],
@@ -104,23 +107,25 @@ type Payload = {
 store.dispatch(createRemoveSavesAction(payload as Payload));
 ```
 If groupKeys === undefined
-    groupKeys will equal for all existed groups
+
+&nbsp;&nbsp;groupKeys will equal for all existed groups
 
 If isArray(saveKeys)
-    redux-saves remove only this saves
+
+&nbsp;&nbsp;redux-saves remove only this saves
 
 If isArray(exceptSaveKeys)
-    redux-saves all saves except this saves
 
-> Notice: Don't use saveKeys and exceptSaveKeys at the same time
+&nbsp;&nbsp;redux-saves all saves except this saves
+
+> Don't use saveKeys and exceptSaveKeys at the same time
 
 ##### Load
 
-This implementation create AutoSaves if you try to load some save and at the same time
-you have unsaved changes in reducers;
+> Redux-saves create AutoSaves if you try to load some save and at the same time you have unsaved changes in reducers;
 
-###### Load save
-```
+##### Load save
+```typescript
 type Payload = {
   groupKeys?: TGroupKey[],
   saveKey: TGroupSaveKey
@@ -128,10 +133,11 @@ type Payload = {
 store.dispatch(createLoadSaveAction(payload as Payload));
 ```
 If groupKeys === undefined
-    groupKeys will equal for all existed groups
+
+&nbsp;&nbsp;groupKeys will equal for all existed groups
     
-###### Load previous save
-```
+##### Load previous save
+```typescript
 type Payload = {
     groupKeys?: TGroupKey[],
     count?: number // Count of back steps 
@@ -139,13 +145,15 @@ type Payload = {
 store.dispatch(createLoadPrevSaveAction(payload as Payload));
 ```
 If groupKeys === undefined
-    groupKeys will equal for all existed groups
+
+&nbsp;&nbsp;groupKeys will equal for all existed groups
 
 if count === undefined
-    count will equal 1
+
+&nbsp;&nbsp;count will equal 1
     
-###### Load next save
-```
+##### Load next save
+```typescript
 type Payload = {
     groupKeys?: TGroupKey[],
     count?: number // Count of forward steps 
@@ -153,39 +161,39 @@ type Payload = {
 store.dispatch(createLoadNextSaveAction(payload as Payload));
 ```
 If groupKeys === undefined
-    groupKeys will equal for all existed groups
+
+&nbsp;&nbsp;groupKeys will equal for all existed groups
 
 if count === undefined
-    count will equal 1
 
+&nbsp;&nbsp;count will equal 1
 
-Few words how work Load prev and next:
-Underhood saves it's two-linked list, every save have link to prev and next save,
-that give possibilities to implemet logic like undo/redo.
-
+*Few words how work Load prev and next:*
+*Underhood saves it's two-linked list, every save have link to prev and next save,*
+*that give possibilities to implemet logic like undo/redo.*
 
 #### Actions that generate redux-saves
 If load previous or next save will change state in some groups
 You can catch actions like:
 
 * On success load previous saves
-```
+```typescript
 type LoadPrevSaveDoneAction = {
     type: ActionType.LoadPrevSaveDone,
     payload: { groupKeys: Array<string | number> }
 }
 ```
 * On success load next saves
-```
+```typescript
 type LoadNextSaveDoneAction = {
     type: ActionType.LoadPrevSaveDone,
     payload: { groupKeys: Array<string | number> }
 }
 ```
-> NOtice: groupKeys will include all group that was changed
+> groupKeys will include all group that was changed
 
 #### State for redux-saves reducer
-```
+```typescript
 type TGroupKey = string | number;
 type TGroupSaveKey = string | number;
 
