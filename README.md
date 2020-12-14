@@ -92,6 +92,11 @@ store.dispatch(createClearSavesAction());
 ```
 
 #### Remove saves
+Try to remove current save for all groups
+```typescript
+store.dispatch(createRemoveSavesAction());
+```
+Or
 ```typescript
 type Payload = {
     groupKeys?: TGroupKey[],
@@ -105,6 +110,11 @@ store.dispatch(createRemoveSavesAction(payload as Payload));
 + if isArray(saveKeys) - redux-saves remove only this saves
 
 + if isArray(exceptSaveKeys) - redux-saves all saves except this saves
+
+> Removing saves don't change reducers state!
+> However if you remove current save (last save / save that you just load),
+> redux-saves update current save key. (Try get previous save)
+> You should remember about this, when you remove current save and try load next save.
 
 > Don't use saveKeys and exceptSaveKeys at the same time
 

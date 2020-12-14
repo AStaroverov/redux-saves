@@ -8,6 +8,7 @@ import {
   TGroupSave,
   isValuableAction,
   TGroupSaveKey,
+  createSetInitStateAction,
 } from "./definitions";
 import {
   getCurrentGroupSaveKey,
@@ -24,8 +25,8 @@ import {
   getGroupChangeState,
   deleteSave,
   isGeneratedSaveKey,
+  getGroupSave,
 } from "./helpers";
-
 
 // savesReducerWrapper create for each reducer history and controls the content
 function savesReducerWrapper<S>(
@@ -41,6 +42,17 @@ function savesReducerWrapper<S>(
 
   const saveStore: TSaveStore = createSaveStore();
   let currentSave: TSave | void;
+  const deleteSaveSafety = (groupSaveKey: TGroupSaveKey) => {
+    if (currentSave && currentSave.groupSaveKey === groupSaveKey) {
+      const groupSave = getGroupSave(groupKey, groupSaveKey);
+
+      currentSave = groupSave.prevSaveKey !== undefined
+        ? getSave(saveStore, groupSave.prevSaveKey)
+        : undefined;
+    }
+
+    deleteSave(saveStore, groupSaveKey);
+  }
 
   return (reducerState: S | undefined, action: AnyAction | TSaveActions): S => {
     if (
@@ -88,7 +100,7 @@ function savesReducerWrapper<S>(
       }
 
       if (action.type === ActionType.LoadSave) {
-        currentSave = getSave(saveStore, action.payload.saveKey);
+        currentSave = getSave(saveStore, action.payload.saveKey) || currentSave;
 
         if (currentSave) {
           return currentSave.snapshot as S;
@@ -134,30 +146,23 @@ function savesReducerWrapper<S>(
       return currentSave ? currentSave.snapshot as S : reducerState;
     }
 
-    if (action.type === ActionType.RemoveSaves && currentSave) {
+    if (action.type === ActionType.RemoveSaves && currentGroupSaveKey) {
       if (storeSize === 0) {
         return reducerState;
       }
 
       const { saveKeys, exceptSaveKeys } = action.payload;
 
-
-      if (saveKeys === undefined && exceptSaveKeys === undefined && currentSave !== undefined) {
-        deleteSave(saveStore, currentSave.groupSaveKey);
-
-        currentSave = currentGroupSaveKey
-          ? getSave(saveStore, currentGroupSaveKey)
-          : undefined; 
+      if (saveKeys === undefined && exceptSaveKeys === undefined) {
+        deleteSaveSafety(currentGroupSaveKey);
       }
 
       if (saveKeys !== undefined) {
-        saveKeys.forEach((saveKey: TGroupSaveKey) => {
-          deleteSave(saveStore, saveKey);
-        });
+        saveKeys.forEach(deleteSaveSafety);
       } else if (exceptSaveKeys !== undefined) {
         saveStore.forEach((_, saveKey) => {
           if (exceptSaveKeys.indexOf(saveKey) !== -1) {
-            deleteSave(saveStore, saveKey);
+            deleteSaveSafety(saveKey);
           }
         });
       }

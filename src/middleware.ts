@@ -123,7 +123,28 @@ export function createSavesMiddleware(): Middleware {
           }
         });
       }
-      
+
+      // remove all histories for so as not to store dead reducers
+      // (if we unregister reducer dynamic modules)
+      getGroupKeys().forEach(deleteSaveStores)
+
+      const result = next(action);
+
+      if (action.type === ActionType.ClearSaves) {
+        groupKeys.forEach((key) => {
+          clearGroupSaveStore(key);
+          setCurrentGroupSaveKey(key, undefined);
+        });
+      }
+
+      const wasUpdatedGroupsKeys = new Set<TGroupKey>();
+
+      if (action.type === ActionType.AddSave) {
+        groupKeys.forEach((key) => {
+          setGroupChangeState(key, false);
+        });
+      }
+
       if (action.type === ActionType.RemoveSaves) {
         groupKeys.forEach((key) => {
           const currentGroupSaveKey = getCurrentGroupSaveKey(key);
@@ -149,27 +170,6 @@ export function createSavesMiddleware(): Middleware {
               }
             });
           }
-        });
-      }
-
-      // remove all histories for so as not to store dead reducers
-      // (if we unregister reducer dynamic modules)
-      getGroupKeys().forEach(deleteSaveStores)
-
-      const result = next(action);
-
-      if (action.type === ActionType.ClearSaves) {
-        groupKeys.forEach((key) => {
-          clearGroupSaveStore(key);
-          setCurrentGroupSaveKey(key, undefined);
-        });
-      }
-
-      const wasUpdatedGroupsKeys = new Set<TGroupKey>();
-
-      if (action.type === ActionType.AddSave) {
-        groupKeys.forEach((key) => {
-          setGroupChangeState(key, false);
         });
       }
 

@@ -1,9 +1,9 @@
 import { createStore } from "redux-dynamic-modules-core";
 import { Action, applyMiddleware } from "redux";
-import { savesReducer, TSavesState } from "../reducer";
-import { savesReducerWrapper } from "../reducerWrapper";
-import { createSavesMiddleware } from "../middleware";
-import { getSaveStores, getSaveStoreSize } from "../helpers";
+import { savesReducer, TSavesState } from "../src/reducer";
+import { savesReducerWrapper } from "../src/reducerWrapper";
+import { createSavesMiddleware } from "../src/middleware";
+import { getSaveStores, getSaveStoreSize } from "../src/helpers";
 import {
   createAddSaveAction,
   createClearSavesAction,
@@ -13,7 +13,7 @@ import {
   DEFAULT_GROUP_KEY,
   TGroupKey,
   createLoadSaveAction
-} from "../definitions";
+} from "../src/definitions";
 
 const R1 = "reducer1";
 const R2 = "reducer2";
@@ -453,12 +453,19 @@ describe("redux-saves", () => {
       expect(select(s => s[R1])).toBe(2);
 
       dispatch(createRemoveSavesAction());
-      dispatch(createLoadPrevSaveAction());
 
       getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
         expect(getSaveStoreSize(store)).toBe(2);
       });
-      expect(select(s => s[R1])).toBe(1);
+      // Remove dont change state
+      expect(select(s => s[R1])).toBe(2);
+
+      dispatch(createLoadNextSaveAction());
+
+      getSaveStores(DEFAULT_GROUP_KEY).forEach((store) => {
+        expect(getSaveStoreSize(store)).toBe(2);
+      });
+      expect(select(s => s[R1])).toBe(3);
     });
 
     test("should correct walk on history", () => {

@@ -4222,6 +4222,13 @@
     const reducer3 = optionalReducer ? optionalReducer : groupKeyOrReducer;
     const saveStore = createSaveStore();
     let currentSave;
+    const deleteSaveSafety = (groupSaveKey) => {
+      if (currentSave && currentSave.groupSaveKey === groupSaveKey) {
+        const groupSave = getGroupSave(groupKey, groupSaveKey);
+        currentSave = groupSave.prevSaveKey !== void 0 ? getSave(saveStore, groupSave.prevSaveKey) : void 0;
+      }
+      deleteSave(saveStore, groupSaveKey);
+    };
     return (reducerState, action) => {
       if (reducerState === void 0 || !isValuableAction(action.type)) {
         const nextState = reducer3(reducerState, action);
@@ -4243,7 +4250,7 @@
           addSave(saveStore, createSave(currentGroupSaveKey, reducerState));
         }
         if (action.type === ActionType.LoadSave) {
-          currentSave = getSave(saveStore, action.payload.saveKey);
+          currentSave = getSave(saveStore, action.payload.saveKey) || currentSave;
           if (currentSave) {
             return currentSave.snapshot;
           }
@@ -4271,23 +4278,20 @@
         });
         return currentSave ? currentSave.snapshot : reducerState;
       }
-      if (action.type === ActionType.RemoveSaves && currentSave) {
+      if (action.type === ActionType.RemoveSaves && currentGroupSaveKey) {
         if (storeSize === 0) {
           return reducerState;
         }
         const {saveKeys, exceptSaveKeys} = action.payload;
-        if (saveKeys === void 0 && exceptSaveKeys === void 0 && currentSave !== void 0) {
-          deleteSave(saveStore, currentSave.groupSaveKey);
-          currentSave = currentGroupSaveKey ? getSave(saveStore, currentGroupSaveKey) : void 0;
+        if (saveKeys === void 0 && exceptSaveKeys === void 0) {
+          deleteSaveSafety(currentGroupSaveKey);
         }
         if (saveKeys !== void 0) {
-          saveKeys.forEach((saveKey) => {
-            deleteSave(saveStore, saveKey);
-          });
+          saveKeys.forEach(deleteSaveSafety);
         } else if (exceptSaveKeys !== void 0) {
           saveStore.forEach((_2, saveKey) => {
             if (exceptSaveKeys.indexOf(saveKey) !== -1) {
-              deleteSave(saveStore, saveKey);
+              deleteSaveSafety(saveKey);
             }
           });
         }
@@ -4353,6 +4357,20 @@
             }
           });
         }
+        getGroupKeys().forEach(deleteSaveStores);
+        const result = next(action);
+        if (action.type === ActionType.ClearSaves) {
+          groupKeys.forEach((key) => {
+            clearGroupSaveStore(key);
+            setCurrentGroupSaveKey(key, void 0);
+          });
+        }
+        const wasUpdatedGroupsKeys = new Set();
+        if (action.type === ActionType.AddSave) {
+          groupKeys.forEach((key) => {
+            setGroupChangeState(key, false);
+          });
+        }
         if (action.type === ActionType.RemoveSaves) {
           groupKeys.forEach((key) => {
             const currentGroupSaveKey = getCurrentGroupSaveKey(key);
@@ -4374,20 +4392,6 @@
                 }
               });
             }
-          });
-        }
-        getGroupKeys().forEach(deleteSaveStores);
-        const result = next(action);
-        if (action.type === ActionType.ClearSaves) {
-          groupKeys.forEach((key) => {
-            clearGroupSaveStore(key);
-            setCurrentGroupSaveKey(key, void 0);
-          });
-        }
-        const wasUpdatedGroupsKeys = new Set();
-        if (action.type === ActionType.AddSave) {
-          groupKeys.forEach((key) => {
-            setGroupChangeState(key, false);
           });
         }
         if (action.type === ActionType.LoadSave) {
